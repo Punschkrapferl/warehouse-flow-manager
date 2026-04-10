@@ -7,6 +7,7 @@ import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.stockmovement.dto.CreateStockMovementRequest;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
+import com.example.warehouseflowmanager.stockmovement.dto.StockMovementSummaryResponse;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -106,6 +108,108 @@ public class StockMovementService {
                 .filter(movement -> matchesDateRange(movement, from, to))
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StockMovementSummaryResponse getStockMovementSummary(
+            Long productId,
+            Instant from,
+            Instant to
+    ) {
+        validateDateRange(from, to);
+
+        Product product = null;
+
+        if (productId != null) {
+            product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + productId
+                    ));
+        }
+
+        List<StockMovement> movements = getBaseMovements(productId, null).stream()
+                .filter(movement -> matchesDateRange(movement, from, to))
+                .toList();
+
+        return buildSummaryResponse(product, from, to, movements);
+    }
+
+    @Transactional(readOnly = true)
+    public StockMovementSummaryResponse getStockMovementSummaryByProductId(
+            Long productId,
+            Instant from,
+            Instant to
+    ) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId
+                ));
+
+        validateDateRange(from, to);
+
+        List<StockMovement> movements = getBaseMovements(productId, null).stream()
+                .filter(movement -> matchesDateRange(movement, from, to))
+                .toList();
+
+        return buildSummaryResponse(product, from, to, movements);
+    }
+
+    private StockMovementSummaryResponse buildSummaryResponse(
+            Product product,
+            Instant from,
+            Instant to,
+            List<StockMovement> movements
+    ) {
+        long inboundMovementCount = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.INBOUND)
+                .count();
+
+        long outboundMovementCount = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.OUTBOUND)
+                .count();
+
+        long adjustmentMovementCount = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.ADJUSTMENT)
+                .count();
+
+        int totalInboundQuantity = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.INBOUND)
+                .map(StockMovement::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalOutboundQuantity = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.OUTBOUND)
+                .map(StockMovement::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int totalAdjustmentQuantity = movements.stream()
+                .filter(movement -> movement.getMovementType() == StockMovementType.ADJUSTMENT)
+                .map(StockMovement::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        Instant latestMovementAt = movements.isEmpty() ? null : movements.get(0).getMovementAt();
+
+        return new StockMovementSummaryResponse(
+                product != null ? product.getId() : null,
+                product != null ? product.getSku() : null,
+                from,
+                to,
+                movements.size(),
+                inboundMovementCount,
+                outboundMovementCount,
+                adjustmentMovementCount,
+                totalInboundQuantity,
+                totalOutboundQuantity,
+                totalAdjustmentQuantity,
+                product != null ? product.getQuantity() : null,
+                latestMovementAt
+        );
     }
 
     private List<StockMovement> getBaseMovements(Long productId, StockMovementType movementType) {

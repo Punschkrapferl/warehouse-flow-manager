@@ -2,7 +2,7 @@ package com.example.warehouseflowmanager.product.dto;
 
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,8 +26,7 @@ public class UpdateProductRequest {
         @NotBlank(message = "Unit is required")
         private String unit;
 
-        @NotNull(message = "Quantity is required")
-        @PositiveOrZero(message = "Quantity must be zero or greater")
+        @Null(message = "Quantity cannot be changed through product update. Use stock movements instead")
         private Integer quantity;
 
         @PositiveOrZero(message = "Minimum quantity must be zero or greater")

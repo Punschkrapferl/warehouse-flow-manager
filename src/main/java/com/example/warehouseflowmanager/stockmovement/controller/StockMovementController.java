@@ -2,6 +2,7 @@ package com.example.warehouseflowmanager.stockmovement.controller;
 
 import com.example.warehouseflowmanager.stockmovement.dto.CreateStockMovementRequest;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
+import com.example.warehouseflowmanager.stockmovement.dto.StockMovementSummaryResponse;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import jakarta.validation.Valid;
@@ -36,5 +37,14 @@ public class StockMovementController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to
     ) {
         return stockMovementService.getStockMovements(productId, movementType, from, to);
+    }
+
+    @GetMapping("/summary")
+    public StockMovementSummaryResponse getStockMovementSummary(
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to
+    ) {
+        return stockMovementService.getStockMovementSummary(productId, from, to);
     }
 }

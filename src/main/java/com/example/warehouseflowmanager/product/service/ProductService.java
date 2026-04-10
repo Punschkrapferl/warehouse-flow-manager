@@ -120,7 +120,6 @@ public class ProductService {
         product.setName(request.getName().trim());
         product.setDescription(normalizeDescription(request.getDescription()));
         product.setUnit(request.getUnit().trim());
-        product.setQuantity(request.getQuantity());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
         product.setStorageLocation(resolveStorageLocation(request.getStorageLocationId()));
