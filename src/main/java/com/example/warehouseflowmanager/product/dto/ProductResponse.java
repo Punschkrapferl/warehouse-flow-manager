@@ -6,6 +6,7 @@ public record ProductResponse(
         String name,
         String description,
         String unit,
-        Integer quantity
+        Integer quantity,
+        String locationCode
 ) {
 }

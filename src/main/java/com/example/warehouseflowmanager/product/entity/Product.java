@@ -45,4 +45,7 @@ public class Product {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    @Column(nullable = false, length = 50)
+    private String locationCode;
 }

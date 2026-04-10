@@ -24,6 +24,10 @@ public record UpdateProductRequest(
 
         @NotNull(message = "Quantity is required")
         @Min(value = 0, message = "Quantity must be 0 or greater")
-        Integer quantity
+        Integer quantity,
+
+        @NotBlank(message = "Location code must not be blank")
+        @Size(max = 50, message = "Location code must not be longer than 50 characters")
+        String locationCode
 ) {
 }
