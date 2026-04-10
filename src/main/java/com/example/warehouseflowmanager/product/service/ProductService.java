@@ -13,6 +13,7 @@ import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProductService {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id",
+            "sku",
+            "name",
+            "quantity",
+            "status",
+            "minimumQuantity"
+    );
 
     private final ProductRepository productRepository;
     private final StorageLocationRepository storageLocationRepository;
@@ -58,16 +68,20 @@ public class ProductService {
             Long storageLocationId,
             String search,
             int page,
-            int size
+            int size,
+            String sortBy,
+            String direction
     ) {
         String normalizedSearch = normalizeSearch(search);
         int normalizedPage = Math.max(page, 0);
         int normalizedSize = normalizePageSize(size);
+        String normalizedSortBy = normalizeSortBy(sortBy);
+        Sort.Direction sortDirection = normalizeSortDirection(direction);
 
         PageRequest pageRequest = PageRequest.of(
                 normalizedPage,
                 normalizedSize,
-                Sort.by(Sort.Direction.ASC, "id")
+                Sort.by(sortDirection, normalizedSortBy)
         );
 
         Page<ProductResponse> productPage = productRepository.findAllWithFilters(
@@ -180,6 +194,31 @@ public class ProductService {
             return 10;
         }
         return Math.min(size, 100);
+    }
+
+    private String normalizeSortBy(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "id";
+        }
+
+        String trimmedSortBy = sortBy.trim();
+        if (!ALLOWED_SORT_FIELDS.contains(trimmedSortBy)) {
+            return "id";
+        }
+
+        return trimmedSortBy;
+    }
+
+    private Sort.Direction normalizeSortDirection(String direction) {
+        if (direction == null || direction.isBlank()) {
+            return Sort.Direction.ASC;
+        }
+
+        try {
+            return Sort.Direction.fromString(direction.trim());
+        } catch (IllegalArgumentException exception) {
+            return Sort.Direction.ASC;
+        }
     }
 
     private ProductResponse mapToResponse(Product product) {

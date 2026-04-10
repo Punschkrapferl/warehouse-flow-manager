@@ -45,9 +45,19 @@ public class ProductController {
             @RequestParam(required = false) Long storageLocationId,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
     ) {
-        return productService.getProducts(status, storageLocationId, search, page, size);
+        return productService.getProducts(
+                status,
+                storageLocationId,
+                search,
+                page,
+                size,
+                sortBy,
+                direction
+        );
     }
 
     @GetMapping("/{id}")
