@@ -1,53 +1,57 @@
 package com.example.warehouseflowmanager.product.service;
 
+import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
+import com.example.warehouseflowmanager.product.dto.ProductResponse;
 import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-/*
- * Service layer for Product-related business logic.
- *
- * Purpose:
- * Keep business logic separate from the web layer and database layer.
- *
- * The controller should handle HTTP requests.
- * The repository should handle database access.
- * The service sits in between and decides what business actions happen.
- */
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
 
-    /*
-     * Constructor injection.
-     *
-     * Spring automatically provides the ProductRepository bean here.
-     * This is the recommended way to inject dependencies.
-     */
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductResponse createProduct(CreateProductRequest request) {
+        if (productRepository.existsBySku(request.sku())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A product with this SKU already exists"
+            );
+        }
+
+        Product product = Product.builder()
+                .sku(request.sku())
+                .name(request.name())
+                .description(request.description())
+                .unit(request.unit())
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+
+        return mapToResponse(savedProduct);
     }
 
-    /*
-     * Returns all products from the persistence layer.
-     */
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
-    /*
-     * Creates and stores a new product.
-     *
-     * For now, this is still very simple.
-     * Later, later business rules can be added here such as:
-     * - checking whether the SKU already exists
-     * - validating allowed units
-     * - normalizing values before saving
-     */
-    public Product createProduct(Product product) {
-        return productRepository.save(product);
+    private ProductResponse mapToResponse(Product product) {
+        return new ProductResponse(
+                product.getId(),
+                product.getSku(),
+                product.getName(),
+                product.getDescription(),
+                product.getUnit()
+        );
     }
 }
