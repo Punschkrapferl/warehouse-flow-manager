@@ -24,6 +24,9 @@ public class StockMovement {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(nullable = false)
+    private Integer resultingQuantity;
+
     @Column(length = 255)
     private String note;
 
@@ -56,6 +59,14 @@ public class StockMovement {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public Integer getResultingQuantity() {
+        return resultingQuantity;
+    }
+
+    public void setResultingQuantity(Integer resultingQuantity) {
+        this.resultingQuantity = resultingQuantity;
     }
 
     public String getNote() {

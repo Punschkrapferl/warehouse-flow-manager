@@ -60,13 +60,14 @@ public class StockMovementService {
         stockMovement.setProduct(product);
         stockMovement.setMovementType(request.getMovementType());
         stockMovement.setQuantity(movementQuantity);
+        stockMovement.setResultingQuantity(newQuantity);
         stockMovement.setNote(request.getNote());
         stockMovement.setMovementAt(Instant.now());
 
         StockMovement savedMovement = stockMovementRepository.save(stockMovement);
         productRepository.save(product);
 
-        return mapToResponse(savedMovement, product.getQuantity());
+        return mapToResponse(savedMovement);
     }
 
     @Transactional(readOnly = true)
@@ -83,18 +84,18 @@ public class StockMovementService {
         }
 
         return stockMovements.stream()
-                .map(movement -> mapToResponse(movement, movement.getProduct().getQuantity()))
+                .map(this::mapToResponse)
                 .toList();
     }
 
-    private StockMovementResponse mapToResponse(StockMovement stockMovement, Integer resultingQuantity) {
+    private StockMovementResponse mapToResponse(StockMovement stockMovement) {
         return new StockMovementResponse(
                 stockMovement.getId(),
                 stockMovement.getProduct().getId(),
                 stockMovement.getProduct().getSku(),
                 stockMovement.getMovementType(),
                 stockMovement.getQuantity(),
-                resultingQuantity,
+                stockMovement.getResultingQuantity(),
                 stockMovement.getNote(),
                 stockMovement.getMovementAt()
         );
