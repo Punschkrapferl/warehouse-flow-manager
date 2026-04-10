@@ -1,5 +1,6 @@
 package com.example.warehouseflowmanager.product.controller;
 
+import com.example.warehouseflowmanager.common.dto.PagedResponse;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
@@ -39,12 +40,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<ProductResponse> getProducts(
+    public PagedResponse<ProductResponse> getProducts(
             @RequestParam(required = false) ProductStatus status,
             @RequestParam(required = false) Long storageLocationId,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
-        return productService.getProducts(status, storageLocationId, search);
+        return productService.getProducts(status, storageLocationId, search, page, size);
     }
 
     @GetMapping("/{id}")

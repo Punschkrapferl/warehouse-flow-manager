@@ -1,5 +1,6 @@
 package com.example.warehouseflowmanager.product.service;
 
+import com.example.warehouseflowmanager.common.dto.PagedResponse;
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
@@ -12,6 +13,9 @@ import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,13 +51,31 @@ public class ProductService {
         return mapToResponse(savedProductWithStorageLocation);
     }
 
-    public List<ProductResponse> getProducts(ProductStatus status, Long storageLocationId, String search) {
+    public PagedResponse<ProductResponse> getProducts(
+            ProductStatus status,
+            Long storageLocationId,
+            String search,
+            int page,
+            int size
+    ) {
         String normalizedSearch = normalizeSearch(search);
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = normalizePageSize(size);
 
-        return productRepository.findAllWithFilters(status, storageLocationId, normalizedSearch)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        PageRequest pageRequest = PageRequest.of(
+                normalizedPage,
+                normalizedSize,
+                Sort.by(Sort.Direction.ASC, "id")
+        );
+
+        Page<ProductResponse> productPage = productRepository.findAllWithFilters(
+                status,
+                storageLocationId,
+                normalizedSearch,
+                pageRequest
+        ).map(this::mapToResponse);
+
+        return PagedResponse.from(productPage);
     }
 
     public ProductResponse getProductById(Long id) {
@@ -135,6 +157,13 @@ public class ProductService {
             return "";
         }
         return search.trim();
+    }
+
+    private int normalizePageSize(int size) {
+        if (size < 1) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 
     private ProductResponse mapToResponse(Product product) {

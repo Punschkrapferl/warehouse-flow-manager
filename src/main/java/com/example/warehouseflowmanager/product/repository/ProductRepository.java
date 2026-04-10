@@ -4,6 +4,8 @@ import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,27 +20,37 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsByStorageLocationId(Long storageLocationId);
 
     @EntityGraph(attributePaths = "storageLocation")
-    @Query("select p from Product p order by p.id asc")
-    List<Product> findAllWithStorageLocation();
-
-    @EntityGraph(attributePaths = "storageLocation")
-    @Query("""
-           select p
-           from Product p
-           left join p.storageLocation sl
-           where (:status is null or p.status = :status)
-             and (:storageLocationId is null or sl.id = :storageLocationId)
-             and (
-                 :search = ''
-                 or lower(p.name) like lower(concat('%', :search, '%'))
-                 or lower(p.sku) like lower(concat('%', :search, '%'))
-             )
-           order by p.id asc
-           """)
-    List<Product> findAllWithFilters(
+    @Query(
+            value = """
+                    select p
+                    from Product p
+                    left join p.storageLocation sl
+                    where (:status is null or p.status = :status)
+                      and (:storageLocationId is null or sl.id = :storageLocationId)
+                      and (
+                          :search = ''
+                          or lower(p.name) like lower(concat('%', :search, '%'))
+                          or lower(p.sku) like lower(concat('%', :search, '%'))
+                      )
+                    """,
+            countQuery = """
+                    select count(p)
+                    from Product p
+                    left join p.storageLocation sl
+                    where (:status is null or p.status = :status)
+                      and (:storageLocationId is null or sl.id = :storageLocationId)
+                      and (
+                          :search = ''
+                          or lower(p.name) like lower(concat('%', :search, '%'))
+                          or lower(p.sku) like lower(concat('%', :search, '%'))
+                      )
+                    """
+    )
+    Page<Product> findAllWithFilters(
             @Param("status") ProductStatus status,
             @Param("storageLocationId") Long storageLocationId,
-            @Param("search") String search
+            @Param("search") String search,
+            Pageable pageable
     );
 
     @EntityGraph(attributePaths = "storageLocation")
