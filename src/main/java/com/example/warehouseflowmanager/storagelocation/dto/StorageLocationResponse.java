@@ -1,5 +1,12 @@
 package com.example.warehouseflowmanager.storagelocation.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class StorageLocationResponse {
 
     private Long id;
@@ -7,41 +14,4 @@ public class StorageLocationResponse {
     private String zone;
     private String description;
     private Boolean active;
-
-    public StorageLocationResponse() {
-    }
-
-    public StorageLocationResponse(
-            Long id,
-            String code,
-            String zone,
-            String description,
-            Boolean active
-    ) {
-        this.id = id;
-        this.code = code;
-        this.zone = zone;
-        this.description = description;
-        this.active = active;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getZone() {
-        return zone;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
 }

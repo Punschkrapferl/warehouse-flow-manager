@@ -11,6 +11,7 @@ import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,64 +29,89 @@ public class StockMovementService {
     public StockMovementResponse createStockMovement(CreateStockMovementRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Product with id " + request.getProductId() + " not found"
+                        "Product not found with id: " + request.getProductId()
                 ));
 
-        if (product.getStatus() != ProductStatus.ACTIVE) {
-            throw new InvalidStockMovementException(
-                    "Stock movements are only allowed for ACTIVE products"
-            );
+        if (product.getStatus() == ProductStatus.BLOCKED) {
+            throw new InvalidStockMovementException("Blocked products cannot be moved");
         }
 
         int currentQuantity = product.getQuantity();
-        int movementQuantity = request.getQuantity();
-        int newQuantity;
+        int requestedQuantity = request.getQuantity();
 
-        if (request.getMovementType() == StockMovementType.INBOUND) {
-            newQuantity = currentQuantity + movementQuantity;
-        } else if (request.getMovementType() == StockMovementType.OUTBOUND) {
-            if (movementQuantity > currentQuantity) {
-                throw new InvalidStockMovementException(
-                        "Outbound quantity cannot be greater than current stock"
-                );
-            }
-            newQuantity = currentQuantity - movementQuantity;
-        } else {
-            throw new InvalidStockMovementException("Unsupported stock movement type");
-        }
+        validateRequestedQuantity(request.getMovementType(), requestedQuantity);
 
-        product.setQuantity(newQuantity);
+        int resultingQuantity = switch (request.getMovementType()) {
+            case INBOUND -> currentQuantity + requestedQuantity;
+            case OUTBOUND -> calculateOutboundQuantity(currentQuantity, requestedQuantity);
+            case ADJUSTMENT -> requestedQuantity;
+        };
+
+        product.setQuantity(resultingQuantity);
+        productRepository.save(product);
 
         StockMovement stockMovement = new StockMovement();
         stockMovement.setProduct(product);
         stockMovement.setMovementType(request.getMovementType());
-        stockMovement.setQuantity(movementQuantity);
-        stockMovement.setResultingQuantity(newQuantity);
+        stockMovement.setQuantity(requestedQuantity);
+        stockMovement.setResultingQuantity(resultingQuantity);
         stockMovement.setNote(request.getNote());
         stockMovement.setMovementAt(Instant.now());
 
         StockMovement savedMovement = stockMovementRepository.save(stockMovement);
-        productRepository.save(product);
 
         return mapToResponse(savedMovement);
     }
 
     @Transactional(readOnly = true)
     public List<StockMovementResponse> getStockMovements(Long productId) {
-        List<StockMovement> stockMovements;
+        List<StockMovement> movements;
 
         if (productId != null) {
-            if (!productRepository.existsById(productId)) {
-                throw new ResourceNotFoundException("Product with id " + productId + " not found");
-            }
-            stockMovements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
+            productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + productId
+                    ));
+
+            movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
         } else {
-            stockMovements = stockMovementRepository.findAllByOrderByMovementAtDesc();
+            movements = stockMovementRepository.findAll(
+                    Sort.by(Sort.Direction.DESC, "movementAt")
+            );
         }
 
-        return stockMovements.stream()
+        return movements.stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    private void validateRequestedQuantity(StockMovementType movementType, int quantity) {
+        switch (movementType) {
+            case INBOUND, OUTBOUND -> {
+                if (quantity <= 0) {
+                    throw new InvalidStockMovementException(
+                            movementType + " quantity must be greater than 0"
+                    );
+                }
+            }
+            case ADJUSTMENT -> {
+                if (quantity < 0) {
+                    throw new InvalidStockMovementException(
+                            "ADJUSTMENT quantity must be 0 or greater"
+                    );
+                }
+            }
+        }
+    }
+
+    private int calculateOutboundQuantity(int currentQuantity, int requestedQuantity) {
+        if (requestedQuantity > currentQuantity) {
+            throw new InvalidStockMovementException(
+                    "Outbound quantity cannot exceed current stock"
+            );
+        }
+
+        return currentQuantity - requestedQuantity;
     }
 
     private StockMovementResponse mapToResponse(StockMovement stockMovement) {

@@ -10,24 +10,31 @@ import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final StorageLocationRepository storageLocationRepository;
+
+    public ProductService(ProductRepository productRepository,
+                          StorageLocationRepository storageLocationRepository) {
+        this.productRepository = productRepository;
+        this.storageLocationRepository = storageLocationRepository;
+    }
 
     public ProductResponse createProduct(CreateProductRequest request) {
         if (productRepository.existsBySku(request.getSku())) {
             throw new ResourceConflictException("Product with SKU '" + request.getSku() + "' already exists");
         }
 
-        StorageLocation storageLocation = findStorageLocationById(request.getStorageLocationId());
+        StorageLocation storageLocation = storageLocationRepository.findById(request.getStorageLocationId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Storage location with id " + request.getStorageLocationId() + " not found"
+                ));
 
         Product product = new Product();
         product.setSku(request.getSku());
@@ -39,7 +46,18 @@ public class ProductService {
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
 
         Product savedProduct = productRepository.save(product);
-        return mapToResponse(savedProduct);
+
+        return new ProductResponse(
+                savedProduct.getId(),
+                savedProduct.getSku(),
+                savedProduct.getName(),
+                savedProduct.getDescription(),
+                savedProduct.getUnit(),
+                savedProduct.getQuantity(),
+                storageLocation.getId(),
+                storageLocation.getCode(),
+                savedProduct.getStatus()
+        );
     }
 
     public List<ProductResponse> getAllProducts() {
@@ -50,15 +68,18 @@ public class ProductService {
     }
 
     public ProductResponse getProductById(Long id) {
-        Product product = findProductById(id);
+        Product product = productRepository.findWithStorageLocationById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+
         return mapToResponse(product);
     }
 
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
-        Product product = findProductById(id);
+        Product product = productRepository.findWithStorageLocationById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
 
         if (request.getSku() != null && !request.getSku().equals(product.getSku())) {
-            if (productRepository.existsBySku(request.getSku())) {
+            if (productRepository.existsBySkuAndIdNot(request.getSku(), id)) {
                 throw new ResourceConflictException("Product with SKU '" + request.getSku() + "' already exists");
             }
             product.setSku(request.getSku());
@@ -81,7 +102,10 @@ public class ProductService {
         }
 
         if (request.getStorageLocationId() != null) {
-            StorageLocation storageLocation = findStorageLocationById(request.getStorageLocationId());
+            StorageLocation storageLocation = storageLocationRepository.findById(request.getStorageLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Storage location with id " + request.getStorageLocationId() + " not found"
+                    ));
             product.setStorageLocation(storageLocation);
         }
 
@@ -94,33 +118,24 @@ public class ProductService {
     }
 
     public void deleteProduct(Long id) {
-        Product product = findProductById(id);
-        productRepository.delete(product);
-    }
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product with id " + id + " not found");
+        }
 
-    private Product findProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
-    }
-
-    private StorageLocation findStorageLocationById(Long id) {
-        return storageLocationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Storage location with id " + id + " not found"
-                ));
+        productRepository.deleteById(id);
     }
 
     private ProductResponse mapToResponse(Product product) {
-        return ProductResponse.builder()
-                .id(product.getId())
-                .sku(product.getSku())
-                .name(product.getName())
-                .description(product.getDescription())
-                .unit(product.getUnit())
-                .quantity(product.getQuantity())
-                .storageLocationId(product.getStorageLocation().getId())
-                .storageLocationCode(product.getStorageLocation().getCode())
-                .status(product.getStatus())
-                .build();
+        return new ProductResponse(
+                product.getId(),
+                product.getSku(),
+                product.getName(),
+                product.getDescription(),
+                product.getUnit(),
+                product.getQuantity(),
+                product.getStorageLocation().getId(),
+                product.getStorageLocation().getCode(),
+                product.getStatus()
+        );
     }
 }

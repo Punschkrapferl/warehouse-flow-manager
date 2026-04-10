@@ -6,7 +6,6 @@ import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +18,6 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ProductResponse createProduct(@Valid @RequestBody CreateProductRequest request) {
         return productService.createProduct(request);
     }
@@ -35,15 +33,11 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ProductResponse updateProduct(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateProductRequest request
-    ) {
+    public ProductResponse updateProduct(@PathVariable Long id, @Valid @RequestBody UpdateProductRequest request) {
         return productService.updateProduct(id, request);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }

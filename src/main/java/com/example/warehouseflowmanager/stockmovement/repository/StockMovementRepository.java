@@ -7,7 +7,5 @@ import java.util.List;
 
 public interface StockMovementRepository extends JpaRepository<StockMovement, Long> {
 
-    List<StockMovement> findAllByOrderByMovementAtDesc();
-
     List<StockMovement> findByProductIdOrderByMovementAtDesc(Long productId);
 }

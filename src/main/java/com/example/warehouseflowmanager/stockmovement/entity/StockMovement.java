@@ -2,11 +2,17 @@ package com.example.warehouseflowmanager.stockmovement.entity;
 
 import com.example.warehouseflowmanager.product.entity.Product;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "stock_movements")
+@Getter
+@Setter
+@NoArgsConstructor
 public class StockMovement {
 
     @Id
@@ -32,56 +38,4 @@ public class StockMovement {
 
     @Column(nullable = false)
     private Instant movementAt;
-
-    public Long getId() {
-        return id;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public StockMovementType getMovementType() {
-        return movementType;
-    }
-
-    public void setMovementType(StockMovementType movementType) {
-        this.movementType = movementType;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public Integer getResultingQuantity() {
-        return resultingQuantity;
-    }
-
-    public void setResultingQuantity(Integer resultingQuantity) {
-        this.resultingQuantity = resultingQuantity;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public Instant getMovementAt() {
-        return movementAt;
-    }
-
-    public void setMovementAt(Instant movementAt) {
-        this.movementAt = movementAt;
-    }
 }

@@ -2,7 +2,13 @@ package com.example.warehouseflowmanager.storagelocation.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class UpdateStorageLocationRequest {
 
     @Size(max = 50, message = "Location code must not exceed 50 characters")
@@ -19,36 +25,4 @@ public class UpdateStorageLocationRequest {
     private String description;
 
     private Boolean active;
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getZone() {
-        return zone;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public void setZone(String zone) {
-        this.zone = zone;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
 }

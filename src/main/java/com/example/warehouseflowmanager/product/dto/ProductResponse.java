@@ -1,11 +1,13 @@
 package com.example.warehouseflowmanager.product.dto;
 
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductResponse {
 
     private Long id;
