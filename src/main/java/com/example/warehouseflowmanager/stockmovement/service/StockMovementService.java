@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -65,15 +66,37 @@ public class StockMovementService {
         StockMovement savedMovement = stockMovementRepository.save(stockMovement);
         productRepository.save(product);
 
+        return mapToResponse(savedMovement, product.getQuantity());
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getStockMovements(Long productId) {
+        List<StockMovement> stockMovements;
+
+        if (productId != null) {
+            if (!productRepository.existsById(productId)) {
+                throw new ResourceNotFoundException("Product with id " + productId + " not found");
+            }
+            stockMovements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
+        } else {
+            stockMovements = stockMovementRepository.findAllByOrderByMovementAtDesc();
+        }
+
+        return stockMovements.stream()
+                .map(movement -> mapToResponse(movement, movement.getProduct().getQuantity()))
+                .toList();
+    }
+
+    private StockMovementResponse mapToResponse(StockMovement stockMovement, Integer resultingQuantity) {
         return new StockMovementResponse(
-                savedMovement.getId(),
-                product.getId(),
-                product.getSku(),
-                savedMovement.getMovementType(),
-                savedMovement.getQuantity(),
-                product.getQuantity(),
-                savedMovement.getNote(),
-                savedMovement.getMovementAt()
+                stockMovement.getId(),
+                stockMovement.getProduct().getId(),
+                stockMovement.getProduct().getSku(),
+                stockMovement.getMovementType(),
+                stockMovement.getQuantity(),
+                resultingQuantity,
+                stockMovement.getNote(),
+                stockMovement.getMovementAt()
         );
     }
 }
