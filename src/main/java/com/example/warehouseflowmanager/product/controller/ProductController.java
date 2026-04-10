@@ -3,6 +3,7 @@ package com.example.warehouseflowmanager.product.controller;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
+import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.service.ProductService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,8 +39,12 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<ProductResponse> getAllProducts() {
-        return productService.getAllProducts();
+    public List<ProductResponse> getProducts(
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(required = false) Long storageLocationId,
+            @RequestParam(required = false) String search
+    ) {
+        return productService.getProducts(status, storageLocationId, search);
     }
 
     @GetMapping("/{id}")

@@ -20,6 +20,26 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findAllWithStorageLocation();
 
     @EntityGraph(attributePaths = "storageLocation")
+    @Query("""
+           select p
+           from Product p
+           left join p.storageLocation sl
+           where (:status is null or p.status = :status)
+             and (:storageLocationId is null or sl.id = :storageLocationId)
+             and (
+                 :search = ''
+                 or lower(p.name) like lower(concat('%', :search, '%'))
+                 or lower(p.sku) like lower(concat('%', :search, '%'))
+             )
+           order by p.id asc
+           """)
+    List<Product> findAllWithFilters(
+            @Param("status") ProductStatus status,
+            @Param("storageLocationId") Long storageLocationId,
+            @Param("search") String search
+    );
+
+    @EntityGraph(attributePaths = "storageLocation")
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findWithStorageLocationById(@Param("id") Long id);
 

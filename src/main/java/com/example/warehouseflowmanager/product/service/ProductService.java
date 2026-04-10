@@ -47,8 +47,10 @@ public class ProductService {
         return mapToResponse(savedProductWithStorageLocation);
     }
 
-    public List<ProductResponse> getAllProducts() {
-        return productRepository.findAllWithStorageLocation()
+    public List<ProductResponse> getProducts(ProductStatus status, Long storageLocationId, String search) {
+        String normalizedSearch = normalizeSearch(search);
+
+        return productRepository.findAllWithFilters(status, storageLocationId, normalizedSearch)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -126,6 +128,13 @@ public class ProductService {
             return null;
         }
         return description.trim();
+    }
+
+    private String normalizeSearch(String search) {
+        if (search == null || search.isBlank()) {
+            return "";
+        }
+        return search.trim();
     }
 
     private ProductResponse mapToResponse(Product product) {
