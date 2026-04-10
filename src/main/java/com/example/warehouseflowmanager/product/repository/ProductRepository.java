@@ -54,6 +54,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     );
 
     @EntityGraph(attributePaths = "storageLocation")
+    @Query("""
+           select p
+           from Product p
+           left join p.storageLocation sl
+           where sl.id = :storageLocationId
+           order by p.name asc, p.id asc
+           """)
+    List<Product> findAllByStorageLocationIdWithStorageLocation(@Param("storageLocationId") Long storageLocationId);
+
+    @EntityGraph(attributePaths = "storageLocation")
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findWithStorageLocationById(@Param("id") Long id);
 

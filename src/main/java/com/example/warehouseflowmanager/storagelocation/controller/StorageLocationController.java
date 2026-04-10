@@ -2,6 +2,7 @@ package com.example.warehouseflowmanager.storagelocation.controller;
 
 import com.example.warehouseflowmanager.storagelocation.dto.CreateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationResponse;
+import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationStockOverviewResponse;
 import com.example.warehouseflowmanager.storagelocation.dto.UpdateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.service.StorageLocationService;
 import jakarta.validation.Valid;
@@ -34,6 +35,11 @@ public class StorageLocationController {
     @GetMapping("/{id}")
     public StorageLocationResponse getStorageLocationById(@PathVariable Long id) {
         return storageLocationService.getStorageLocationById(id);
+    }
+
+    @GetMapping("/{id}/stock-overview")
+    public StorageLocationStockOverviewResponse getStorageLocationStockOverview(@PathVariable Long id) {
+        return storageLocationService.getStorageLocationStockOverview(id);
     }
 
     @PutMapping("/{id}")

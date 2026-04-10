@@ -65,20 +65,27 @@ public class StockMovementService {
 
     @Transactional(readOnly = true)
     public List<StockMovementResponse> getStockMovements(Long productId) {
-        List<StockMovement> movements;
-
         if (productId != null) {
-            productRepository.findById(productId)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Product not found with id: " + productId
-                    ));
-
-            movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
-        } else {
-            movements = stockMovementRepository.findAll(
-                    Sort.by(Sort.Direction.DESC, "movementAt")
-            );
+            return getStockMovementsByProductId(productId);
         }
+
+        List<StockMovement> movements = stockMovementRepository.findAll(
+                Sort.by(Sort.Direction.DESC, "movementAt")
+        );
+
+        return movements.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getStockMovementsByProductId(Long productId) {
+        productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId
+                ));
+
+        List<StockMovement> movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
 
         return movements.stream()
                 .map(this::mapToResponse)

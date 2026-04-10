@@ -2,15 +2,20 @@ package com.example.warehouseflowmanager.storagelocation.service;
 
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
+import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.dto.CreateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationResponse;
+import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationStockItemResponse;
+import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationStockOverviewResponse;
 import com.example.warehouseflowmanager.storagelocation.dto.UpdateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +51,38 @@ public class StorageLocationService {
     public StorageLocationResponse getStorageLocationById(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
         return mapToResponse(storageLocation);
+    }
+
+    public StorageLocationStockOverviewResponse getStorageLocationStockOverview(Long id) {
+        StorageLocation storageLocation = findStorageLocationById(id);
+
+        List<Product> products = productRepository.findAllByStorageLocationIdWithStorageLocation(id);
+
+        List<StorageLocationStockItemResponse> productItems = products.stream()
+                .map(this::mapToStockItemResponse)
+                .toList();
+
+        int totalQuantity = products.stream()
+                .map(Product::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        int lowStockProductCount = (int) products.stream()
+                .filter(this::isLowStock)
+                .count();
+
+        return new StorageLocationStockOverviewResponse(
+                storageLocation.getId(),
+                storageLocation.getCode(),
+                storageLocation.getZone(),
+                storageLocation.getDescription(),
+                storageLocation.getActive(),
+                productItems.size(),
+                totalQuantity,
+                lowStockProductCount,
+                productItems
+        );
     }
 
     public StorageLocationResponse updateStorageLocation(Long id, UpdateStorageLocationRequest request) {
@@ -104,5 +141,26 @@ public class StorageLocationService {
                 storageLocation.getDescription(),
                 storageLocation.getActive()
         );
+    }
+
+    private StorageLocationStockItemResponse mapToStockItemResponse(Product product) {
+        Integer minimumQuantity = product.getMinimumQuantity() != null ? product.getMinimumQuantity() : 0;
+
+        return new StorageLocationStockItemResponse(
+                product.getId(),
+                product.getSku(),
+                product.getName(),
+                product.getUnit(),
+                product.getQuantity(),
+                minimumQuantity,
+                product.getStatus(),
+                isLowStock(product)
+        );
+    }
+
+    private boolean isLowStock(Product product) {
+        int quantity = product.getQuantity() != null ? product.getQuantity() : 0;
+        int minimumQuantity = product.getMinimumQuantity() != null ? product.getMinimumQuantity() : 0;
+        return quantity <= minimumQuantity;
     }
 }
