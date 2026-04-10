@@ -2,6 +2,7 @@ package com.example.warehouseflowmanager.product.service;
 
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
+import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,30 @@ public class ProductService {
                 ));
 
         return mapToResponse(product);
+    }
+
+    public ProductResponse updateProductById(Long id, UpdateProductRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product with id " + id + " was not found"
+                ));
+
+        if (productRepository.existsBySkuAndIdNot(request.sku(), id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A product with this SKU already exists"
+            );
+        }
+
+        product.setSku(request.sku());
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setUnit(request.unit());
+
+        Product updatedProduct = productRepository.save(product);
+
+        return mapToResponse(updatedProduct);
     }
 
     public void deleteProductById(Long id) {

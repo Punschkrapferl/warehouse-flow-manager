@@ -2,6 +2,7 @@ package com.example.warehouseflowmanager.product.controller;
 
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
+import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,14 @@ public class ProductController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductResponse> updateProductById(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateProductRequest request
+    ) {
+        return ResponseEntity.ok(productService.updateProductById(id, request));
     }
 
     @DeleteMapping("/{id}")
