@@ -11,6 +11,7 @@ import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final StorageLocationRepository storageLocationRepository;
+    private final EntityManager entityManager;
 
     @Transactional
     public ProductResponse createProduct(CreateProductRequest request) {
@@ -117,6 +119,20 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = getProductByIdOrThrow(id);
+
+        if (product.getQuantity() != null && product.getQuantity() > 0) {
+            throw new ResourceConflictException(
+                    "Product '" + product.getSku() + "' cannot be deleted because it still has stock on hand"
+            );
+        }
+
+        if (hasStockMovementHistory(id)) {
+            throw new ResourceConflictException(
+                    "Product '" + product.getSku()
+                            + "' cannot be deleted because stock movement history exists"
+            );
+        }
+
         productRepository.delete(product);
     }
 
@@ -139,6 +155,17 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Storage location with id " + storageLocationId + " not found"
                 ));
+    }
+
+    private boolean hasStockMovementHistory(Long productId) {
+        Long movementCount = entityManager.createQuery(
+                        "select count(sm) from StockMovement sm where sm.product.id = :productId",
+                        Long.class
+                )
+                .setParameter("productId", productId)
+                .getSingleResult();
+
+        return movementCount != null && movementCount > 0;
     }
 
     private Integer normalizeMinimumQuantity(Integer minimumQuantity) {
