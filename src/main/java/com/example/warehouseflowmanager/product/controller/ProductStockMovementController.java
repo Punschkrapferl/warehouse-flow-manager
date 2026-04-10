@@ -4,8 +4,10 @@ import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -18,8 +20,10 @@ public class ProductStockMovementController {
     @GetMapping("/{id}/stock-movements")
     public List<StockMovementResponse> getProductStockMovements(
             @PathVariable Long id,
-            @RequestParam(required = false) StockMovementType movementType
+            @RequestParam(required = false) StockMovementType movementType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to
     ) {
-        return stockMovementService.getStockMovementsByProductId(id, movementType);
+        return stockMovementService.getStockMovementsByProductId(id, movementType, from, to);
     }
 }

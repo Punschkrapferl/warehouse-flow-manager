@@ -63,55 +63,78 @@ public class StockMovementService {
     }
 
     @Transactional(readOnly = true)
-    public List<StockMovementResponse> getStockMovements(Long productId) {
-        return getStockMovements(productId, null);
-    }
+    public List<StockMovementResponse> getStockMovements(
+            Long productId,
+            StockMovementType movementType,
+            Instant from,
+            Instant to
+    ) {
+        validateDateRange(from, to);
 
-    @Transactional(readOnly = true)
-    public List<StockMovementResponse> getStockMovements(Long productId, StockMovementType movementType) {
         if (productId != null) {
-            return getStockMovementsByProductId(productId, movementType);
+            productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product not found with id: " + productId
+                    ));
         }
 
-        List<StockMovement> movements;
-
-        if (movementType != null) {
-            movements = stockMovementRepository.findByMovementTypeOrderByMovementAtDesc(movementType);
-        } else {
-            movements = stockMovementRepository.findAllByOrderByMovementAtDesc();
-        }
+        List<StockMovement> movements = getBaseMovements(productId, movementType);
 
         return movements.stream()
+                .filter(movement -> matchesDateRange(movement, from, to))
                 .map(this::mapToResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<StockMovementResponse> getStockMovementsByProductId(Long productId) {
-        return getStockMovementsByProductId(productId, null);
-    }
-
-    @Transactional(readOnly = true)
-    public List<StockMovementResponse> getStockMovementsByProductId(Long productId, StockMovementType movementType) {
+    public List<StockMovementResponse> getStockMovementsByProductId(
+            Long productId,
+            StockMovementType movementType,
+            Instant from,
+            Instant to
+    ) {
         productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + productId
                 ));
 
-        List<StockMovement> movements;
+        validateDateRange(from, to);
 
-        if (movementType != null) {
-            movements = stockMovementRepository.findByProductIdAndMovementTypeOrderByMovementAtDesc(
+        List<StockMovement> movements = getBaseMovements(productId, movementType);
+
+        return movements.stream()
+                .filter(movement -> matchesDateRange(movement, from, to))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private List<StockMovement> getBaseMovements(Long productId, StockMovementType movementType) {
+        if (productId != null && movementType != null) {
+            return stockMovementRepository.findByProductIdAndMovementTypeOrderByMovementAtDesc(
                     productId,
                     movementType
             );
-        } else {
-            movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
         }
 
-        return movements.stream()
-                .map(this::mapToResponse)
-                .toList();
+        if (productId != null) {
+            return stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
+        }
+
+        if (movementType != null) {
+            return stockMovementRepository.findByMovementTypeOrderByMovementAtDesc(movementType);
+        }
+
+        return stockMovementRepository.findAllByOrderByMovementAtDesc();
+    }
+
+    private boolean matchesDateRange(StockMovement movement, Instant from, Instant to) {
+        Instant movementAt = movement.getMovementAt();
+
+        if (from != null && movementAt.isBefore(from)) {
+            return false;
+        }
+
+        return to == null || !movementAt.isAfter(to);
     }
 
     private void validateRequestedQuantity(StockMovementType movementType, int quantity) {
@@ -141,6 +164,14 @@ public class StockMovementService {
         }
 
         return currentQuantity - requestedQuantity;
+    }
+
+    private void validateDateRange(Instant from, Instant to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new InvalidStockMovementException(
+                    "'from' must be before or equal to 'to'"
+            );
+        }
     }
 
     private StockMovementResponse mapToResponse(StockMovement stockMovement) {
