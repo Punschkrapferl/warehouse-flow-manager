@@ -1,6 +1,7 @@
 package com.example.warehouseflowmanager.product.service;
 
 import com.example.warehouseflowmanager.common.dto.PagedResponse;
+import com.example.warehouseflowmanager.common.exception.InvalidStockMovementException;
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
@@ -44,20 +45,25 @@ public class ProductService {
 
     @Transactional
     public ProductResponse createProduct(CreateProductRequest request) {
-        if (productRepository.existsBySku(request.getSku().trim())) {
+        String trimmedSku = request.getSku().trim();
+
+        if (productRepository.existsBySku(trimmedSku)) {
             throw new ResourceConflictException(
-                    "Product with SKU '" + request.getSku().trim() + "' already exists"
+                    "Product with SKU '" + trimmedSku + "' already exists"
             );
         }
 
+        ProductStatus productStatus = request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE;
+        validateInitialQuantityForStatus(productStatus, request.getQuantity());
+
         Product product = new Product();
-        product.setSku(request.getSku().trim());
+        product.setSku(trimmedSku);
         product.setName(request.getName().trim());
         product.setDescription(normalizeDescription(request.getDescription()));
         product.setUnit(request.getUnit().trim());
         product.setQuantity(request.getQuantity());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
-        product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
+        product.setStatus(productStatus);
         product.setStorageLocation(resolveStorageLocation(request.getStorageLocationId()));
 
         Product savedProduct = productRepository.save(product);
@@ -152,6 +158,14 @@ public class ProductService {
         }
 
         productRepository.delete(product);
+    }
+
+    private void validateInitialQuantityForStatus(ProductStatus status, Integer quantity) {
+        if (status == ProductStatus.BLOCKED && quantity != null && quantity > 0) {
+            throw new InvalidStockMovementException(
+                    "Blocked products cannot be created with initial stock"
+            );
+        }
     }
 
     private void createInitialStockMovementIfNeeded(Product product) {
