@@ -1,8 +1,10 @@
 package com.example.warehouseflowmanager.product.dto;
 
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,24 +12,28 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class UpdateProductRequest {
 
-        @Size(max = 100, message = "SKU must not exceed 100 characters")
+        @NotBlank(message = "SKU is required")
         private String sku;
 
-        @Size(max = 255, message = "Name must not exceed 255 characters")
+        @NotBlank(message = "Name is required")
         private String name;
 
-        @Size(max = 1000, message = "Description must not exceed 1000 characters")
         private String description;
 
-        @Size(max = 50, message = "Unit must not exceed 50 characters")
+        @NotBlank(message = "Unit is required")
         private String unit;
 
-        @Min(value = 0, message = "Quantity must be 0 or greater")
+        @NotNull(message = "Quantity is required")
+        @PositiveOrZero(message = "Quantity must be zero or greater")
         private Integer quantity;
 
-        private Long storageLocationId;
+        @PositiveOrZero(message = "Minimum quantity must be zero or greater")
+        private Integer minimumQuantity;
 
         private ProductStatus status;
+
+        private Long storageLocationId;
 }

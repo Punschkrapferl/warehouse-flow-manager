@@ -4,8 +4,10 @@ import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductResponse {
@@ -19,4 +21,6 @@ public class ProductResponse {
     private Long storageLocationId;
     private String storageLocationCode;
     private ProductStatus status;
+    private Integer minimumQuantity;
+    private boolean lowStock;
 }
