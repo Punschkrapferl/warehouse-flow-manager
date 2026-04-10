@@ -6,41 +6,31 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-        name = "product",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_product_sku", columnNames = "sku")
-        }
-)
+@Table(name = "products")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, unique = true)
     private String sku;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false)
     private String unit;
 
     @Column(nullable = false)
@@ -48,4 +38,7 @@ public class Product {
 
     @Column(nullable = false, length = 50)
     private String locationCode;
+
+    @Column(nullable = false, length = 30)
+    private ProductStatus status;
 }

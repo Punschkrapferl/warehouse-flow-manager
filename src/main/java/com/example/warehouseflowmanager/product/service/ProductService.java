@@ -3,13 +3,13 @@ package com.example.warehouseflowmanager.product.service;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
+import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
+import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.entity.Product;
+import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,89 +20,93 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public ProductResponse createProduct(CreateProductRequest request) {
-        if (productRepository.existsBySku(request.sku())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A product with this SKU already exists"
-            );
+        if (productRepository.existsBySku(request.getSku())) {
+            throw new ResourceConflictException("Product with SKU '" + request.getSku() + "' already exists");
         }
 
-        Product product = Product.builder()
-                .sku(request.sku())
-                .name(request.name())
-                .description(request.description())
-                .unit(request.unit())
-                .quantity(request.quantity())
-                .locationCode(request.locationCode())
-                .build();
+        Product product = new Product();
+        product.setSku(request.getSku());
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setUnit(request.getUnit());
+        product.setQuantity(request.getQuantity());
+        product.setLocationCode(request.getLocationCode());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
 
         Product savedProduct = productRepository.save(product);
-
         return mapToResponse(savedProduct);
     }
 
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
+        return productRepository.findAll()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
     public ProductResponse getProductById(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id " + id + " was not found"
-                ));
-
+        Product product = findProductById(id);
         return mapToResponse(product);
     }
 
-    public ProductResponse updateProductById(Long id, UpdateProductRequest request) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id " + id + " was not found"
-                ));
+    public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
+        Product product = findProductById(id);
 
-        if (productRepository.existsBySkuAndIdNot(request.sku(), id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A product with this SKU already exists"
-            );
+        if (request.getSku() != null && !request.getSku().equals(product.getSku())) {
+            if (productRepository.existsBySku(request.getSku())) {
+                throw new ResourceConflictException("Product with SKU '" + request.getSku() + "' already exists");
+            }
+            product.setSku(request.getSku());
         }
 
-        product.setSku(request.sku());
-        product.setName(request.name());
-        product.setDescription(request.description());
-        product.setUnit(request.unit());
-        product.setQuantity(request.quantity());
-        product.setLocationCode(request.locationCode());
+        if (request.getName() != null) {
+            product.setName(request.getName());
+        }
+
+        if (request.getDescription() != null) {
+            product.setDescription(request.getDescription());
+        }
+
+        if (request.getUnit() != null) {
+            product.setUnit(request.getUnit());
+        }
+
+        if (request.getQuantity() != null) {
+            product.setQuantity(request.getQuantity());
+        }
+
+        if (request.getLocationCode() != null) {
+            product.setLocationCode(request.getLocationCode());
+        }
+
+        if (request.getStatus() != null) {
+            product.setStatus(request.getStatus());
+        }
 
         Product updatedProduct = productRepository.save(product);
-
         return mapToResponse(updatedProduct);
     }
 
-    public void deleteProductById(Long id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product with id " + id + " was not found"
-                ));
-
+    public void deleteProduct(Long id) {
+        Product product = findProductById(id);
         productRepository.delete(product);
     }
 
+    private Product findProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+    }
+
     private ProductResponse mapToResponse(Product product) {
-        return new ProductResponse(
-                product.getId(),
-                product.getSku(),
-                product.getName(),
-                product.getDescription(),
-                product.getUnit(),
-                product.getQuantity(),
-                product.getLocationCode()
-        );
+        return ProductResponse.builder()
+                .id(product.getId())
+                .sku(product.getSku())
+                .name(product.getName())
+                .description(product.getDescription())
+                .unit(product.getUnit())
+                .quantity(product.getQuantity())
+                .locationCode(product.getLocationCode())
+                .status(product.getStatus())
+                .build();
     }
 }
