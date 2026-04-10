@@ -14,6 +14,7 @@ public class ProductResponse {
     private String description;
     private String unit;
     private Integer quantity;
-    private String locationCode;
+    private Long storageLocationId;
+    private String storageLocationCode;
     private ProductStatus status;
 }

@@ -3,7 +3,7 @@ package com.example.warehouseflowmanager.product.dto;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,16 +27,12 @@ public class CreateProductRequest {
         @Size(max = 50, message = "Unit must not exceed 50 characters")
         private String unit;
 
+        @NotNull(message = "Quantity must not be null")
         @Min(value = 0, message = "Quantity must be greater than or equal to 0")
         private Integer quantity;
 
-        @NotBlank(message = "Location code must not be blank")
-        @Size(max = 50, message = "Location code must not exceed 50 characters")
-        @Pattern(
-                regexp = "^[A-Z0-9-]+$",
-                message = "Location code must contain only uppercase letters, numbers, and hyphens"
-        )
-        private String locationCode;
+        @NotNull(message = "Storage location id must not be null")
+        private Long storageLocationId;
 
         private ProductStatus status;
 }

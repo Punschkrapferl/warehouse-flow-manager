@@ -1,13 +1,15 @@
 package com.example.warehouseflowmanager.product.service;
 
+import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
+import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
-import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
-import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
+import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
+import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +20,14 @@ import java.util.List;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final StorageLocationRepository storageLocationRepository;
 
     public ProductResponse createProduct(CreateProductRequest request) {
         if (productRepository.existsBySku(request.getSku())) {
             throw new ResourceConflictException("Product with SKU '" + request.getSku() + "' already exists");
         }
+
+        StorageLocation storageLocation = findStorageLocationById(request.getStorageLocationId());
 
         Product product = new Product();
         product.setSku(request.getSku());
@@ -30,7 +35,7 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setUnit(request.getUnit());
         product.setQuantity(request.getQuantity());
-        product.setLocationCode(request.getLocationCode());
+        product.setStorageLocation(storageLocation);
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
 
         Product savedProduct = productRepository.save(product);
@@ -75,8 +80,9 @@ public class ProductService {
             product.setQuantity(request.getQuantity());
         }
 
-        if (request.getLocationCode() != null) {
-            product.setLocationCode(request.getLocationCode());
+        if (request.getStorageLocationId() != null) {
+            StorageLocation storageLocation = findStorageLocationById(request.getStorageLocationId());
+            product.setStorageLocation(storageLocation);
         }
 
         if (request.getStatus() != null) {
@@ -97,6 +103,13 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
     }
 
+    private StorageLocation findStorageLocationById(Long id) {
+        return storageLocationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Storage location with id " + id + " not found"
+                ));
+    }
+
     private ProductResponse mapToResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())
@@ -105,7 +118,8 @@ public class ProductService {
                 .description(product.getDescription())
                 .unit(product.getUnit())
                 .quantity(product.getQuantity())
-                .locationCode(product.getLocationCode())
+                .storageLocationId(product.getStorageLocation().getId())
+                .storageLocationCode(product.getStorageLocation().getCode())
                 .status(product.getStatus())
                 .build();
     }

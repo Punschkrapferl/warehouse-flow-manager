@@ -1,12 +1,16 @@
 package com.example.warehouseflowmanager.product.entity;
 
+import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,8 +42,9 @@ public class Product {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(nullable = false, length = 50)
-    private String locationCode;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "storage_location_id", nullable = false)
+    private StorageLocation storageLocation;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

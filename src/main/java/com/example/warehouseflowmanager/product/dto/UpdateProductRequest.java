@@ -2,7 +2,6 @@ package com.example.warehouseflowmanager.product.dto;
 
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,12 +25,7 @@ public class UpdateProductRequest {
         @Min(value = 0, message = "Quantity must be greater than or equal to 0")
         private Integer quantity;
 
-        @Size(max = 50, message = "Location code must not exceed 50 characters")
-        @Pattern(
-                regexp = "^[A-Z0-9-]+$",
-                message = "Location code must contain only uppercase letters, numbers, and hyphens"
-        )
-        private String locationCode;
+        private Long storageLocationId;
 
         private ProductStatus status;
 }
