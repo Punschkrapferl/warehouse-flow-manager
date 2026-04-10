@@ -1,6 +1,7 @@
 package com.example.warehouseflowmanager.product.controller;
 
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
+import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,10 @@ public class ProductStockMovementController {
     private final StockMovementService stockMovementService;
 
     @GetMapping("/{id}/stock-movements")
-    public List<StockMovementResponse> getProductStockMovements(@PathVariable Long id) {
-        return stockMovementService.getStockMovementsByProductId(id);
+    public List<StockMovementResponse> getProductStockMovements(
+            @PathVariable Long id,
+            @RequestParam(required = false) StockMovementType movementType
+    ) {
+        return stockMovementService.getStockMovementsByProductId(id, movementType);
     }
 }

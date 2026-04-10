@@ -11,7 +11,6 @@ import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,13 +64,22 @@ public class StockMovementService {
 
     @Transactional(readOnly = true)
     public List<StockMovementResponse> getStockMovements(Long productId) {
+        return getStockMovements(productId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getStockMovements(Long productId, StockMovementType movementType) {
         if (productId != null) {
-            return getStockMovementsByProductId(productId);
+            return getStockMovementsByProductId(productId, movementType);
         }
 
-        List<StockMovement> movements = stockMovementRepository.findAll(
-                Sort.by(Sort.Direction.DESC, "movementAt")
-        );
+        List<StockMovement> movements;
+
+        if (movementType != null) {
+            movements = stockMovementRepository.findByMovementTypeOrderByMovementAtDesc(movementType);
+        } else {
+            movements = stockMovementRepository.findAllByOrderByMovementAtDesc();
+        }
 
         return movements.stream()
                 .map(this::mapToResponse)
@@ -80,12 +88,26 @@ public class StockMovementService {
 
     @Transactional(readOnly = true)
     public List<StockMovementResponse> getStockMovementsByProductId(Long productId) {
+        return getStockMovementsByProductId(productId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getStockMovementsByProductId(Long productId, StockMovementType movementType) {
         productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + productId
                 ));
 
-        List<StockMovement> movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
+        List<StockMovement> movements;
+
+        if (movementType != null) {
+            movements = stockMovementRepository.findByProductIdAndMovementTypeOrderByMovementAtDesc(
+                    productId,
+                    movementType
+            );
+        } else {
+            movements = stockMovementRepository.findByProductIdOrderByMovementAtDesc(productId);
+        }
 
         return movements.stream()
                 .map(this::mapToResponse)

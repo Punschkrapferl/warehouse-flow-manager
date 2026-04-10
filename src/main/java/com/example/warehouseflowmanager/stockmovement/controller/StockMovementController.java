@@ -2,6 +2,7 @@ package com.example.warehouseflowmanager.stockmovement.controller;
 
 import com.example.warehouseflowmanager.stockmovement.dto.CreateStockMovementRequest;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
+import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,9 @@ public class StockMovementController {
 
     @GetMapping
     public List<StockMovementResponse> getStockMovements(
-            @RequestParam(required = false) Long productId
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) StockMovementType movementType
     ) {
-        return stockMovementService.getStockMovements(productId);
+        return stockMovementService.getStockMovements(productId, movementType);
     }
 }
