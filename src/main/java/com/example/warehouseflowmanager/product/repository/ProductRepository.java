@@ -15,6 +15,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsBySkuAndIdNot(String sku, Long id);
 
+    boolean existsByStorageLocationId(Long storageLocationId);
+
     @EntityGraph(attributePaths = "storageLocation")
     @Query("select p from Product p order by p.id asc")
     List<Product> findAllWithStorageLocation();

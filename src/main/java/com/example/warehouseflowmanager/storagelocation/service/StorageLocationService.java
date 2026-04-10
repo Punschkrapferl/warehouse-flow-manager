@@ -2,21 +2,22 @@ package com.example.warehouseflowmanager.storagelocation.service;
 
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
+import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.dto.CreateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationResponse;
 import com.example.warehouseflowmanager.storagelocation.dto.UpdateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class StorageLocationService {
 
     private final StorageLocationRepository storageLocationRepository;
+    private final ProductRepository productRepository;
 
     public StorageLocationResponse createStorageLocation(CreateStorageLocationRequest request) {
         if (storageLocationRepository.existsByCode(request.getCode())) {
@@ -77,6 +78,14 @@ public class StorageLocationService {
 
     public void deleteStorageLocation(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
+
+        if (productRepository.existsByStorageLocationId(id)) {
+            throw new ResourceConflictException(
+                    "Storage location '" + storageLocation.getCode()
+                            + "' cannot be deleted because products are still assigned to it"
+            );
+        }
+
         storageLocationRepository.delete(storageLocation);
     }
 
