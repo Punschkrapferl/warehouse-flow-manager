@@ -11,7 +11,10 @@ import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
+import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
+import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -58,8 +61,10 @@ public class ProductService {
         product.setStorageLocation(resolveStorageLocation(request.getStorageLocationId()));
 
         Product savedProduct = productRepository.save(product);
-        Product savedProductWithStorageLocation = getProductWithStorageLocation(savedProduct.getId());
 
+        createInitialStockMovementIfNeeded(savedProduct);
+
+        Product savedProductWithStorageLocation = getProductWithStorageLocation(savedProduct.getId());
         return mapToResponse(savedProductWithStorageLocation);
     }
 
@@ -147,6 +152,22 @@ public class ProductService {
         }
 
         productRepository.delete(product);
+    }
+
+    private void createInitialStockMovementIfNeeded(Product product) {
+        if (product.getQuantity() == null || product.getQuantity() <= 0) {
+            return;
+        }
+
+        StockMovement stockMovement = new StockMovement();
+        stockMovement.setProduct(product);
+        stockMovement.setMovementType(StockMovementType.INBOUND);
+        stockMovement.setQuantity(product.getQuantity());
+        stockMovement.setResultingQuantity(product.getQuantity());
+        stockMovement.setNote("Initial stock on product creation");
+        stockMovement.setMovementAt(Instant.now());
+
+        stockMovementRepository.save(stockMovement);
     }
 
     private Product getProductByIdOrThrow(Long id) {
