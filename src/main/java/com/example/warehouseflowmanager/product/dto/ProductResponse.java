@@ -5,6 +5,7 @@ public record ProductResponse(
         String sku,
         String name,
         String description,
-        String unit
+        String unit,
+        Integer quantity
 ) {
 }

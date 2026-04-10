@@ -32,6 +32,7 @@ public class ProductService {
                 .name(request.name())
                 .description(request.description())
                 .unit(request.unit())
+                .quantity(request.quantity())
                 .build();
 
         Product savedProduct = productRepository.save(product);
@@ -74,6 +75,7 @@ public class ProductService {
         product.setName(request.name());
         product.setDescription(request.description());
         product.setUnit(request.unit());
+        product.setQuantity(request.quantity());
 
         Product updatedProduct = productRepository.save(product);
 
@@ -96,7 +98,8 @@ public class ProductService {
                 product.getSku(),
                 product.getName(),
                 product.getDescription(),
-                product.getUnit()
+                product.getUnit(),
+                product.getQuantity()
         );
     }
 }

@@ -42,4 +42,7 @@ public class Product {
 
     @Column(nullable = false, length = 30)
     private String unit;
+
+    @Column(nullable = false)
+    private Integer quantity;
 }
