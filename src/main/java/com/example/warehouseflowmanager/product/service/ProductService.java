@@ -45,6 +45,16 @@ public class ProductService {
                 .toList();
     }
 
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product with id " + id + " was not found"
+                ));
+
+        return mapToResponse(product);
+    }
+
     private ProductResponse mapToResponse(Product product) {
         return new ProductResponse(
                 product.getId(),
