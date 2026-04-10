@@ -55,6 +55,16 @@ public class ProductService {
         return mapToResponse(product);
     }
 
+    public void deleteProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Product with id " + id + " was not found"
+                ));
+
+        productRepository.delete(product);
+    }
+
     private ProductResponse mapToResponse(Product product) {
         return new ProductResponse(
                 product.getId(),

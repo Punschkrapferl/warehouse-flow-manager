@@ -33,4 +33,10 @@ public class ProductController {
     public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProductById(@PathVariable Long id) {
+        productService.deleteProductById(id);
+        return ResponseEntity.noContent().build();
+    }
 }
