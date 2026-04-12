@@ -11,13 +11,12 @@ import com.example.warehouseflowmanager.stockmovement.dto.StockMovementSummaryRe
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +27,7 @@ public class StockMovementService {
 
     @Transactional
     public StockMovementResponse createStockMovement(CreateStockMovementRequest request) {
-        Product product = productRepository.findById(request.getProductId())
+        Product product = productRepository.findByIdForUpdate(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + request.getProductId()
                 ));
