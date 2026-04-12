@@ -1,216 +1,555 @@
 # Warehouse Flow Manager
 
-Warehouse Flow Manager is a full stack warehouse operations demo inspired by intralogistics software systems.
+Backend-focused warehouse operations demo built with **Java 21**, **Spring Boot**, and **PostgreSQL**.
 
-The goal of this project is to model core warehouse workflows such as product management, inventory tracking, warehouse order processing, and AGV task assignment in a clean and maintainable architecture.
+The project models a small but realistic warehouse domain with **products**, **storage locations**, and **stock movements**. It is designed to showcase the backend engineering concerns that matter most in portfolio reviews and interviews: **clean API design, validation, business rules, persistence, transaction safety, testing, documentation, and Docker-based delivery**.
 
-This project is being built step by step to demonstrate backend, frontend, API, database, and software design skills in a realistic business context.
+The repository can be reviewed in two practical ways:
 
-## Why this project
+- **from source** via `docker compose up --build`
+- **from the released Docker image** via `docker pull punschkrapferl23/warehouse-flow-manager:1.0.0`
 
-I built this project as a portfolio application for a Java Full Stack role in the logistics and warehouse software domain.
+---
 
-The focus is not on overengineering, but on building a clean and extensible system that reflects real-world software concerns:
+## Quick start (TL;DR for reviewers)
 
-- clear module boundaries
-- maintainable code structure
-- REST API design
-- relational data modeling
-- incremental feature development
-- transparent engineering decisions through commit history
+### 1. Clone the repository
 
-## Project goals
-
-The project is intended to demonstrate:
-
-- Java backend development with Spring Boot
-- Angular frontend development
-- REST API design
-- relational database modeling with PostgreSQL
-- clean modular architecture
-- testable and maintainable business logic
-- structured project evolution visible through Git commits
-
-## Tech stack
-
-### Backend
-- Java
-- Spring Boot
-- Maven
-- Spring Web
-- Spring Validation
-
-### Planned backend additions
-- Spring Data JPA
-- PostgreSQL
-- OpenAPI / Swagger
-- JUnit
-- Testcontainers
-
-### Frontend
-- Angular
-- TypeScript
-- Angular Material
-
-### Tooling
-- Git / GitHub
-- IntelliJ IDEA
-- Docker Compose later in the project
-
-## Architecture
-
-The system is planned as a **modular monolith**.
-
-This means the application is built as one deployable backend, but internally separated into clean business modules. This keeps the project easier to understand, develop, and test, while still allowing future extraction into independent services if needed.
-
-### Planned backend modules
-
-- Inventory
-- Orders
-- AGV
-- Tasks
-- Shared infrastructure
-
-### Planned package structure
-
-```text
-src/main/java/com/example/warehouseflowmanager/
-  inventory/
-  orders/
-  agv/
-  task/
-  shared/
-  controller/
+```bash
+git clone https://github.com/Punschkrapferl/warehouse-flow-manager
+cd warehouse-flow-manager
 ```
 
-### Core business flow
-The intended workflow of the application is:
-Create products
-Create storage locations
-Add stock to inventory
-Create warehouse orders
-Generate picking tasks
-Assign tasks to available AGVs
-Track progress of tasks and orders
-Mark completed warehouse operations
+### 2. Choose one run mode
+#### Option A: Run the full stack from the repository
+```bash
+docker compose up --build
+```
 
-## Current project status
-### Completed
-- Spring Boot project initialized with Maven
-- Backend application bootstrapped
-- First health check endpoint added
+This starts:
+- PostgreSQL
+- the Spring Boot application
 
-### In progress
-- Understanding and documenting project structure
-- Planning core domain model and feature order
+#### Option B: Run the released Docker image
+Pull the published application image:
+```bash
+docker pull punschkrapferl23/warehouse-flow-manager:1.0.0
+```
 
-### Next steps
-- Add project README and architecture documentation
-- Define first core entity: Product
-- Implement first real feature module
-- Reintroduce persistence layer with JPA and PostgreSQL
+Then run PostgreSQL:
+```bash
+docker run --name warehouse-flow-postgres \
+  -e POSTGRES_DB=warehouse_flow_manager \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  -d postgres:17
+```
 
-## Roadmap
-### Phase 1: Backend foundation
-- ✅ Initialize Spring Boot project 
-- ✅ Add first health endpoint
-- Clean up project structure
-- Add documentation and design notes
+Then run the application image:
+```bash
+docker run --name warehouse-flow-manager \
+  -p 8080:8080 \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=5432 \
+  -e DB_NAME=warehouse_flow_manager \
+  -e DB_USERNAME=postgres \
+  -e DB_PASSWORD=postgres \
+  punschkrapferl23/warehouse-flow-manager:1.0.0
+```
 
-### Phase 2: Product and location management
-- Add Product entity
-- Add StorageLocation entity
-- Add controllers and service layer
-- Add validation rules
+### 3. Open the project
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+- Health endpoint: http://localhost:8080/api/v1/health
 
-### Phase 3: Inventory
-- Add InventoryItem entity
-- Implement stock-in and stock-out logic
-- Add low-stock overview
+### 4. Verify the service
+```bash
+curl http://localhost:8080/api/v1/health
+```
 
-### Phase 4: Orders
-- Add WarehouseOrder and OrderLine
-- Create order workflow
-- Validate stock before assignment
+Expected response:
+```JSON
+{
+  "status": "UP",
+  "service": "warehouse-flow-manager",
+  "timestamp": "2026-04-12T21:15:00Z"
+}
+```
 
-### Phase 5: Tasks and AGVs
-- Add PickingTask and AGV entities
-- Implement simple task assignment logic
-- Track task and order status
+### 5. Stop the stack
+If you used Docker Compose:
+```bash
+docker compose down
+```
 
-### Phase 6: Frontend
-- Initialize Angular frontend
-- Add dashboard
-- Add inventory page
-- Add order management UI
-- Add AGV/task monitoring UI
+If you started containers manually:
+```bash
+docker stop warehouse-flow-manager warehouse-flow-postgres
+docker rm warehouse-flow-manager warehouse-flow-postgres
+```
 
-### Phase 7: Quality improvements
-- Add JUnit tests
-- Add integration tests
-- Add OpenAPI documentation
-- Add Docker Compose setup
+--- 
 
-## Running the backend
-### Requirements
+## What this demonstrates
+- Spring Boot REST API design with a clear feature-based package structure
+- CRUD operations for warehouse products and storage locations
+- Inventory updates through explicit stock movements instead of unsafe direct quantity edits
+- Realistic warehouse business rules instead of purely mechanical CRUD
+- Validation, exception handling, and consistent API responses
+- PostgreSQL's persistence with Flyway-managed schema migrations
+- OpenAPI / Swagger integration for fast API exploration
+- Dockerized local setup with PostgreSQL and the application
+- Integration tests for core backend flows
+  
+The repository includes a released Docker image for quick review:
+- `punschkrapferl23/warehouse-flow-manager:1.0.0`
+
+The application was also kept easy to run directly from source with:
+- `docker compose up --build`
+
+--- 
+
+## Project purpose
+The application manages a simple warehouse domain through three core areas:
+
+### Products:
+Warehouse items with SKU, quantity, status, minimum stock threshold, and assigned storage location
+
+### Storage Locations
+Physical warehouse locations identified by code and zone
+
+### Stock Movements
+Inventory changes recorded explicitly as:
+- `INBOUND`
+- `OUTBOUND`
+- `ADJUSTMENT`
+
+Instead of allowing arbitrary quantity changes, stock updates are intentionally routed through stock movement operations so that inventory changes remain controlled, traceable, and business-rule aware.
+
+---
+
+## Architecture
+### High-level components:
+
+#### Product module:
+- Product CRUD
+- Filtering / pagination / sorting
+- Low-stock handling
+- Product-specific movement history
+
+#### Storage location module:
+- Storage location CRUD
+- Stock overview per location
+
+#### Stock movement module:
+- Inbound, outbound, and adjustment operations
+- Concurrency-aware inventory updates
+- Movement filtering and summary endpoints
+
+#### Shared common modules:
+- API responses
+- Shared DTO infrastructure
+- Centralized exception handling
+
+The project follows a feature-oriented package structure.
+
+#### Main feature packages:
+- `product`
+- `storagelocation`
+- `stockmovement`
+
+#### Each feature keeps the same internal layout:
+- `controller`
+- `dto`
+- `entity`
+- `repository`
+- `service`
+
+#### Shared components live in:
+- `common.api`
+- `common.dto`
+- `common.exception`
+This keeps the codebase easy to navigate during review and aligns well with a clean recruiter-facing backend structure.
+
+---
+
+## Tech stack
 - Java 21
-- Maven Wrapper included in the project
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- PostgreSQL
+- Flyway
+- Jakarta Validation
+- SpringDoc OpenAPI / Swagger
+- JUnit / Spring Boot integration tests
+- Docker
+- Docker Compose
 
-### Start the application
+---
+
+## Main features
+### Product management
+- create products
+- list products
+- fetch product by ID
+- update product metadata
+- delete products with business-rule safeguards
+- filter, paginate, and sort product lists
+- track low-stock products
+
+### Storage location management
+- create storage locations
+- list storage locations
+- fetch storage location by ID
+- update storage locations
+- delete storage locations when allowed
+- inspect stock overview per location
+
+### Stock movement management
+- create `INBOUND`, `OUTBOUND`, and `ADJUSTMENT` movements
+- update product inventory through stock operations
+- retrieve movement history for a product
+- filter stock movements
+- query stock movement summaries
+
+---
+
+## Key business rules
+These rules are implemented in the current codebase and are a central part of the project:
+- product quantity cannot be changed directly through product update requests
+- initial stock on product creation automatically creates a stock movement record
+- blocked products cannot be created with initial stock
+- stock movement creation uses database locking to reduce concurrency issues during inventory updates
+- product deletion is restricted when stock or movement-history constraints apply
+- storage locations cannot be deleted when products are still assigned
+- low-stock logic only counts products with status `ACTIVE`
+- product status values are: `ACTIVE`, `BLOCKED`, `DISCONTINUED`
+
+---
+
+## API overview
+Swagger / OpenAPI is already integrated.
+
+### URLs
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+The API centers around these resource groups:
+    
+### Products
+- product CRUD
+- product filtering / pagination / sorting
+- product stock movement history
+    
+### Storage Locations
+- storage location CRUD
+- stock overview per storage location
+    
+### Stock Movements
+- create stock movements
+- filter stock movements
+- stock movement summary endpoints
+    
+### Health
+- service health check endpoint for runtime verification
+A production-oriented profile is configured to disable SpringDoc when needed.
+
+---
+
+## Health endpoint
+Request:
+```http request
+GET /api/v1/health
+```
+
+Response:
+```JSON
+{
+  "status": "UP",
+  "service": "warehouse-flow-manager",
+  "timestamp": "2026-04-12T21:15:00Z"
+}
+```
+This endpoint is useful for smoke tests, Docker verification, and quick runtime checks.
+
+---
+
+## Prerequisites
+To run with Docker:
+- Docker Desktop or Docker Engine
+- Docker Compose v2 (docker compose)
+
+To run locally without Docker for the application process:
+- Java 21
+- Maven Wrapper (./mvnw is included)
+- PostgreSQL running separately, or started with:
+```bash
+docker compose up -d postgres
+```
+
+---
+
+## Run modes
+### 1. Run from source with Docker Compose
+This is the easiest way to review the repository from source.
+From the project root:
+```bash
+docker compose up --build
+```
+Docker will:
+- start PostgreSQL
+- build the Spring Boot application image from the repository
+- start the application container
+- wait for PostgreSQL health before starting the app container
+
+Open:
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- Health endpoint: `http://localhost:8080/api/v1/health`
+
+To stop the stack:
+```bash
+docker compose down
+```
+
+To also remove volumes:
+```bash
+docker compose down -v
+```
+
+### 2. Run locally with Maven
+Use this mode during normal development when you want to run the application directly.
+
+Start PostgreSQL:
+```bash
+docker compose up -d postgres
+```
+
+Run the application:
 ```bash
 ./mvnw spring-boot:run
 ```
-The backend should be available at:
-```
-http://localhost:8080
-```
-### Health endpoint
-```
-GET /api/v1/health
-```
-Expected response:
-```
-Warehouse Flow Manager backend is running
+
+On Windows:
+```bat
+mvnw.cmd spring-boot:run
 ```
 
-## API overview
-This section will grow as features are added.
+Verify:
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- Health endpoint: `http://localhost:8080/api/v1/health`
 
-### Current endpoint
-- `GET /api/v1/health`
+### 3. Run the released Docker image
+Use this mode when you want to review the published application image directly.
 
-### Planned endpoints
-- `GET /api/v1/products`
-- `POST /api/v1/products`
-- `GET /api/v1/locations`
-- `POST /api/v1/locations`
-- `GET /api/v1/inventory`
-- `POST /api/v1/orders`
-- `GET /api/v1/orders`
-- `GET /api/v1/agvs`
-- `GET /api/v1/tasks`
+Pull the application image:
+```bash
+docker pull punschkrapferl23/warehouse-flow-manager:1.0.0
+```
 
-## Design decisions
-### Why a modular monolith?
+Start PostgreSQL:
+```bash
+docker run --name warehouse-flow-postgres \
+  -e POSTGRES_DB=warehouse_flow_manager \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  -d postgres:17
+ ```
 
-A modular monolith was chosen to keep the project simple, maintainable, and realistic for a portfolio application. It allows clean separation of concerns without the operational overhead of microservices.
+Start the application:
+```bash
+docker run --name warehouse-flow-manager \
+  -p 8080:8080 \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=5432 \
+  -e DB_NAME=warehouse_flow_manager \
+  -e DB_USERNAME=postgres \
+  -e DB_PASSWORD=postgres \
+  punschkrapferl23/warehouse-flow-manager:1.0.0
+ ```
 
-### Why this domain?
-Warehouse and intralogistics software is a strong fit for the target role. This project focuses on business processes that are directly relevant to inventory handling, task orchestration, and operational efficiency.
+Then open:
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- Health endpoint: `http://localhost:8080/api/v1/health`
 
-### Why build incrementally?
-The project is intentionally built in small steps so the commit history reflects real engineering progress, from setup and understanding to design and implementation.
+---
 
-### Learning notes
-This project is also a structured learning journey into:
-- Spring Boot
-- Maven
-- REST APIs
-- backend architecture
-- database integration
-- full stack application design
+## Example workflow
 
-The repository will therefore show both implementation progress and the reasoning behind technical decisions.
+1. Clone repository
+```bash
+git clone https://github.com/Punschkrapferl/warehouse-flow-manager
+cd warehouse-flow-manager
+```
 
-## Author
-Punschkrapferl
+2. Start PostgreSQL only
+```bash
+docker compose up -d postgres 
+```
+
+3. Start the Spring Boot app
+```bash
+./mvnw spring-boot:run
+```
+
+4. Open Swagger
+`http://localhost:8080/swagger-ui/index.html`
+
+5. Check health
+```bash
+curl http://localhost:8080/api/v1/health
+```
+
+6. Run tests
+```bash
+./mvnw test
+```
+
+---
+
+## Tests
+The project already includes integration-oriented test coverage for the main API areas.
+
+Current test classes:
+- `WarehouseFlowManagerApplicationTests`
+- `ProductControllerIntegrationTest`
+- `StorageLocationControllerIntegrationTest`
+- `StockMovementControllerIntegrationTest`
+
+Run all tests with:
+```bash
+./mvnw test
+```
+
+On Windows:
+```bat
+mvnw.cmd test
+```
+These tests verify that application wiring, API flows, persistence, and business rules work together correctly.
+
+---
+
+## Configuration notes
+The configuration is designed to stay practical for both local development and containerized runs.
+
+Current setup:
+- `application.yml` uses environment variables with localhost defaults
+- a dedicated `sql-debug` profile is available
+- the `prod` profile disables SpringDoc
+- Docker support is included through:
+  - `Dockerfile`
+  - `docker-compose.yml`
+  - `.dockerignore`
+
+Docker image release:
+Published image:
+- `punschkrapferl23/warehouse-flow-manager:1.0.0`
+- `punschkrapferl23/warehouse-flow-manager:latest`
+
+Recommended stable pull:
+```bash
+docker pull punschkrapferl23/warehouse-flow-manager:1.0.0
+```
+
+---
+
+## Project Structure
+
+```
+warehouse-flow-manager/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/example/warehouseflowmanager/
+│   │   │       ├── common/
+│   │   │       │   ├── api/
+│   │   │       │   ├── dto/
+│   │   │       │   └── exception/
+│   │   │       ├── product/
+│   │   │       │   ├── controller/
+│   │   │       │   ├── dto/
+│   │   │       │   ├── entity/
+│   │   │       │   ├── repository/
+│   │   │       │   └── service/
+│   │   │       ├── storagelocation/
+│   │   │       │   ├── controller/
+│   │   │       │   ├── dto/
+│   │   │       │   ├── entity/
+│   │   │       │   ├── repository/
+│   │   │       │   └── service/
+│   │   │       └── stockmovement/
+│   │   │           ├── controller/
+│   │   │           ├── dto/
+│   │   │           ├── entity/
+│   │   │           ├── repository/
+│   │   │           └── service/
+│   │   └── resources/
+│   └── test/
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── pom.xml
+└── README.md
+```
+
+---
+
+## Troubleshooting
+### 1. Swagger UI is not available
+Check whether you are running with the production profile.
+The prod profile disables SpringDoc.
+For local development, use the normal run mode instead of prod.
+
+### 2. The app cannot connect to PostgreSQL
+Make sure PostgreSQL is running.
+
+For local development:
+```bash
+docker compose up -d postgres
+```
+Then start the app again.
+
+Also confirm that your database environment variables match the running database.
+
+### 3. Docker Compose starts but the API is not reachable
+
+Restart cleanly:
+```bash
+docker compose down
+docker compose up --build
+```
+
+Then test:
+```bash
+curl http://localhost:8080/api/v1/health
+```
+
+### 4. Port 8080 is already in use
+Stop the conflicting process or change the mapped port in your Docker or local run setup.
+
+### 5. Tests fail because the database state is inconsistent
+
+Restart from a clean Docker state if needed:
+```bash 
+docker compose down -v
+docker compose up --build
+```
+
+Then rerun:
+```bash
+./mvnw test
+```
+
+---
+
+## MIT License
+Copyright (c) 2026 Punschkrapferl
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
