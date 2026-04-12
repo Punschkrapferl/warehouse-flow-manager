@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ProductService {
 
+    // Restrict sorting to known persistent fields so clients cannot request arbitrary properties.
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "id",
             "sku",
@@ -68,6 +69,8 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
 
+        // Keep the current quantity on the product itself for fast reads, but also create an
+        // initial stock movement so the inventory history starts with a traceable first entry.
         createInitialStockMovementIfNeeded(savedProduct);
 
         Product savedProductWithStorageLocation = getProductWithStorageLocation(savedProduct.getId());
@@ -150,6 +153,8 @@ public class ProductService {
             );
         }
 
+        // Preserve auditability: once stock movements exist, the product should remain addressable
+        // in history instead of being physically removed.
         if (stockMovementRepository.existsByProductId(id)) {
             throw new ResourceConflictException(
                     "Product '" + product.getSku()

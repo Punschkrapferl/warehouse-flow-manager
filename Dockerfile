@@ -7,6 +7,8 @@ COPY .mvn .mvn
 COPY mvnw .
 RUN chmod +x mvnw
 
+# Download dependencies first so Docker can reuse this layer
+# when only application source code changes.
 RUN ./mvnw dependency:go-offline
 
 COPY src src

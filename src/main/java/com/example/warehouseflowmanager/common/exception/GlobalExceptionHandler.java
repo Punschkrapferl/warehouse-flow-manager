@@ -193,6 +193,7 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        // Log full server-side details for debugging, but return a neutral message to the client.
         log.error("Unexpected error while handling request {}", request.getRequestURI(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -221,6 +222,8 @@ public class GlobalExceptionHandler {
     }
 
     private String extractFieldName(String propertyPath) {
+        // Constraint violation paths can look like "createProduct.id" or "listProducts.direction".
+        // For API responses, only the actual field/parameter name is useful to the client.
         int lastDotIndex = propertyPath.lastIndexOf('.');
 
         if (lastDotIndex >= 0 && lastDotIndex < propertyPath.length() - 1) {
@@ -233,6 +236,8 @@ public class GlobalExceptionHandler {
     private String buildTypeMismatchMessage(MethodArgumentTypeMismatchException ex) {
         Class<?> requiredType = ex.getRequiredType();
 
+        // Enum mismatches are especially common for query parameters, so return the allowed values
+        // to make the 400 response more helpful in Swagger UI and manual API testing.
         if (requiredType != null && requiredType.isEnum()) {
             String allowedValues = Arrays.stream(requiredType.getEnumConstants())
                     .map(String::valueOf)

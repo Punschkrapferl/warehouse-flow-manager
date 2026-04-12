@@ -27,6 +27,8 @@ public class StockMovementService {
 
     @Transactional
     public StockMovementResponse createStockMovement(CreateStockMovementRequest request) {
+        // Lock the product row before calculating the new quantity so concurrent stock updates
+        // do not overwrite each other and produce inconsistent inventory values.
         Product product = productRepository.findByIdForUpdate(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + request.getProductId()
@@ -44,6 +46,7 @@ public class StockMovementService {
         int resultingQuantity = switch (request.getMovementType()) {
             case INBOUND -> currentQuantity + requestedQuantity;
             case OUTBOUND -> calculateOutboundQuantity(currentQuantity, requestedQuantity);
+            // ADJUSTMENT sets the stock to the counted value instead of adding/removing a delta.
             case ADJUSTMENT -> requestedQuantity;
         };
 
@@ -192,6 +195,7 @@ public class StockMovementService {
                 .mapToInt(Integer::intValue)
                 .sum();
 
+        // Repository methods return newest movements first, so index 0 is the latest movement.
         Instant latestMovementAt = movements.isEmpty() ? null : movements.get(0).getMovementAt();
 
         return new StockMovementSummaryResponse(

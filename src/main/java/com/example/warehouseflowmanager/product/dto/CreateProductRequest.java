@@ -71,7 +71,7 @@ public class CreateProductRequest {
         @Schema(
                 description = "Product status",
                 example = "ACTIVE",
-                allowableValues = {"ACTIVE", "BLOCKED"},
+                allowableValues = {"ACTIVE", "BLOCKED", "DISCONTINUED"},
                 nullable = true
         )
         private ProductStatus status;

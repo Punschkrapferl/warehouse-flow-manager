@@ -4,5 +4,7 @@ spring:
 
 logging:
   level:
+    # Use logger-based SQL output instead of spring.jpa.show-sql
+    # for cleaner and more controllable debugging.
     org.hibernate.SQL: DEBUG
     org.hibernate.orm.jdbc.bind: TRACE

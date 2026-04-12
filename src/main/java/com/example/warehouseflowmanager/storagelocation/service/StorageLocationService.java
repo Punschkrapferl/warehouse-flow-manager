@@ -3,6 +3,7 @@ package com.example.warehouseflowmanager.storagelocation.service;
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
 import com.example.warehouseflowmanager.product.entity.Product;
+import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
 import com.example.warehouseflowmanager.storagelocation.dto.CreateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationResponse;
@@ -11,11 +12,10 @@ import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationStock
 import com.example.warehouseflowmanager.storagelocation.dto.UpdateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
 import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -116,6 +116,8 @@ public class StorageLocationService {
     public void deleteStorageLocation(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
 
+        // Prevent deletion while products still reference this location to avoid orphaned assignments
+        // and to keep location-based inventory data consistent.
         if (productRepository.existsByStorageLocationId(id)) {
             throw new ResourceConflictException(
                     "Storage location '" + storageLocation.getCode()
@@ -161,6 +163,9 @@ public class StorageLocationService {
     private boolean isLowStock(Product product) {
         int quantity = product.getQuantity() != null ? product.getQuantity() : 0;
         int minimumQuantity = product.getMinimumQuantity() != null ? product.getMinimumQuantity() : 0;
-        return quantity <= minimumQuantity;
+
+        // Keep low-stock semantics aligned with ProductService / ProductResponse:
+        // only ACTIVE products are considered low stock.
+        return product.getStatus() == ProductStatus.ACTIVE && quantity <= minimumQuantity;
     }
 }
