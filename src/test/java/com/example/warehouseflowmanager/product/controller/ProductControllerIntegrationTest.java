@@ -3,6 +3,7 @@ package com.example.warehouseflowmanager.product.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,5 +151,56 @@ class ProductControllerIntegrationTest {
 
         assertNotNull(productCount);
         assertEquals(0L, productCount);
+    }
+
+    @Test
+    void shouldRejectNegativeProductId() throws Exception {
+        mockMvc.perform(get("/api/products/{id}", -1))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.validationErrors.id")
+                        .value("Product ID must be greater than 0"));
+    }
+
+    @Test
+    void shouldRejectInvalidSortDirection() throws Exception {
+        mockMvc.perform(get("/api/products")
+                        .param("direction", "sideways"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.validationErrors.direction")
+                        .value("Direction must be either 'asc' or 'desc'"));
+    }
+
+    @Test
+    void shouldRejectInvalidPageSize() throws Exception {
+        mockMvc.perform(get("/api/products")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.validationErrors.size")
+                        .value("Size must be greater than 0"));
+    }
+
+    @Test
+    void shouldRejectMalformedJsonWhenCreatingProduct() throws Exception {
+        String malformedRequestBody = """
+                {
+                  "sku": "TEST-MALFORMED",
+                  "name": "Broken Product",
+                  "description": "Malformed JSON test",
+                  "unit": "piece",
+                  "quantity": 10,
+                  "minimumQuantity": 2,
+                  "status": "ACTIVE",
+                }
+                """;
+
+        mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedRequestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Malformed JSON request or invalid field value"));
     }
 }
