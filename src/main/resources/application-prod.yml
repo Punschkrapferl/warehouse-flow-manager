@@ -1,7 +1,0 @@
-springdoc:
-  # Swagger is useful in development and recruiter demos,
-  # but can be disabled in production-oriented runs.
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false

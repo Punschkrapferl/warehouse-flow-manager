@@ -34,6 +34,7 @@ public class StockMovementService {
                         "Product not found with id: " + request.getProductId()
                 ));
 
+        // Blocked products are not allowed to participate in stock movement operations.
         if (product.getStatus() == ProductStatus.BLOCKED) {
             throw new InvalidStockMovementException("Blocked products cannot be moved");
         }
@@ -43,10 +44,12 @@ public class StockMovementService {
 
         validateRequestedQuantity(request.getMovementType(), requestedQuantity);
 
+        // INBOUND adds stock.
+        // OUTBOUND removes stock but must not go negative.
+        // ADJUSTMENT sets the counted stock level directly.
         int resultingQuantity = switch (request.getMovementType()) {
             case INBOUND -> currentQuantity + requestedQuantity;
             case OUTBOUND -> calculateOutboundQuantity(currentQuantity, requestedQuantity);
-            // ADJUSTMENT sets the stock to the counted value instead of adding/removing a delta.
             case ADJUSTMENT -> requestedQuantity;
         };
 
@@ -58,7 +61,7 @@ public class StockMovementService {
         stockMovement.setMovementType(request.getMovementType());
         stockMovement.setQuantity(requestedQuantity);
         stockMovement.setResultingQuantity(resultingQuantity);
-        stockMovement.setNote(request.getNote());
+        stockMovement.setNote(normalizeNote(request.getNote()));
         stockMovement.setMovementAt(Instant.now());
 
         StockMovement savedMovement = stockMovementRepository.save(stockMovement);
@@ -279,6 +282,14 @@ public class StockMovementService {
                     "'from' must be before or equal to 'to'"
             );
         }
+    }
+
+    private String normalizeNote(String note) {
+        if (note == null || note.isBlank()) {
+            return null;
+        }
+
+        return note.trim();
     }
 
     private StockMovementResponse mapToResponse(StockMovement stockMovement) {

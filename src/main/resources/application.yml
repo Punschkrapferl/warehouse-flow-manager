@@ -1,32 +1,36 @@
 spring:
-  datasource:
-    # Local defaults make the project easy to run for reviewers,
-    # while environment variables allow clean Docker/runtime overrides.
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:warehouse_flow_manager}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+  application:
+    name: warehouse-flow-manager
 
-  flyway:
-    enabled: true
-    # Helps Flyway take over cleanly when a database already exists
-    # or when earlier schema history was introduced before Flyway.
-    baseline-on-migrate: true
-    baseline-version: 1
-    locations: classpath:db/migration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:warehouse_flow_manager}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      # Validate ensures the entity model matches the migrated schema
-      # without letting Hibernate silently change the database structure.
       ddl-auto: validate
-    show-sql: false
-    # Keeps database access inside the service layer instead of leaking
-    # lazy-loading behavior into the web layer.
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8080}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

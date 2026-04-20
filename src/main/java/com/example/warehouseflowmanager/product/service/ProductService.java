@@ -30,7 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ProductService {
 
-    // Restrict sorting to known persistent fields so clients cannot request arbitrary properties.
+    // Only expose sorting on known persistent fields.
+    // This keeps the API predictable and prevents clients from requesting arbitrary properties.
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "id",
             "sku",
@@ -48,6 +49,7 @@ public class ProductService {
     public ProductResponse createProduct(CreateProductRequest request) {
         String trimmedSku = request.getSku().trim();
 
+        // SKU is the external business identifier, so uniqueness matters.
         if (productRepository.existsBySku(trimmedSku)) {
             throw new ResourceConflictException(
                     "Product with SKU '" + trimmedSku + "' already exists"
@@ -55,6 +57,8 @@ public class ProductService {
         }
 
         ProductStatus productStatus = request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE;
+
+        // Keep product status and initial stock logically consistent.
         validateInitialQuantityForStatus(productStatus, request.getQuantity());
 
         Product product = new Product();
@@ -69,8 +73,8 @@ public class ProductService {
 
         Product savedProduct = productRepository.save(product);
 
-        // Keep the current quantity on the product itself for fast reads, but also create an
-        // initial stock movement so the inventory history starts with a traceable first entry.
+        // When a product starts with stock, create the first stock movement automatically
+        // so inventory history begins with a traceable audit entry.
         createInitialStockMovementIfNeeded(savedProduct);
 
         Product savedProductWithStorageLocation = getProductWithStorageLocation(savedProduct.getId());
@@ -130,6 +134,8 @@ public class ProductService {
             );
         }
 
+        // Product quantity is intentionally excluded from this endpoint.
+        // Inventory changes must go through stock movements so they stay auditable.
         product.setSku(trimmedSku);
         product.setName(request.getName().trim());
         product.setDescription(normalizeDescription(request.getDescription()));
@@ -147,6 +153,7 @@ public class ProductService {
     public void deleteProduct(Long id) {
         Product product = getProductByIdOrThrow(id);
 
+        // Prevent deleting products that still have physical stock.
         if (product.getQuantity() != null && product.getQuantity() > 0) {
             throw new ResourceConflictException(
                     "Product '" + product.getSku() + "' cannot be deleted because it still has stock on hand"
@@ -263,6 +270,8 @@ public class ProductService {
     private ProductResponse mapToResponse(Product product) {
         StorageLocation storageLocation = product.getStorageLocation();
         int minimumQuantity = product.getMinimumQuantity() != null ? product.getMinimumQuantity() : 0;
+
+        // Low-stock logic only applies to active products.
         boolean lowStock = product.getStatus() == ProductStatus.ACTIVE
                 && product.getQuantity() <= minimumQuantity;
 

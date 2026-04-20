@@ -1,44 +1,42 @@
+name: warehouse-flow-manager-demo
+
 services:
   postgres:
     image: postgres:17
-    container_name: warehouse-flow-manager-postgres
     environment:
-      POSTGRES_DB: warehouse_flow_manager
-      POSTGRES_USER: REMOVED_POSTGRES_USER
-      POSTGRES_PASSWORD: REMOVED_POSTGRES_PASSWORD
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
-      # Persist database data across container restarts for local development.
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_demo_data:/var/lib/postgresql/data
     healthcheck:
-      # Wait until PostgreSQL is actually ready before starting the application container.
-      test: ["CMD-SHELL", "pg_isready -U postgres -d warehouse_flow_manager"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   app:
     image: punschkrapferl23/warehouse-flow-manager:1.0.0
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: warehouse-flow-manager-app
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      # The application uses the same environment variable names locally and in Docker
-      # so configuration stays simple and consistent across runtimes.
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: warehouse_flow_manager
-      DB_USERNAME: REMOVED_DB_USERNAME
-      DB_PASSWORD: REMOVED_DB_PASSWORD
-      SERVER_PORT: 8080
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SERVER_PORT: ${SERVER_PORT}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT}:8080"
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  postgres_demo_data:

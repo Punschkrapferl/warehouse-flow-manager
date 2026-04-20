@@ -35,6 +35,8 @@ public class StorageLocationService {
         storageLocation.setCode(request.getCode());
         storageLocation.setZone(request.getZone());
         storageLocation.setDescription(request.getDescription());
+
+        // Default new locations to active unless explicitly stated otherwise.
         storageLocation.setActive(request.getActive() != null ? request.getActive() : true);
 
         StorageLocation savedStorageLocation = storageLocationRepository.save(storageLocation);
@@ -56,6 +58,8 @@ public class StorageLocationService {
     public StorageLocationStockOverviewResponse getStorageLocationStockOverview(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
 
+        // Load all products currently assigned to this location so the API can provide
+        // both aggregated totals and item-level visibility.
         List<Product> products = productRepository.findAllByStorageLocationIdWithStorageLocation(id);
 
         List<StorageLocationStockItemResponse> productItems = products.stream()
