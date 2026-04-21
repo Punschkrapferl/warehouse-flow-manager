@@ -161,9 +161,7 @@ public class ProductService {
                         product,
                         recentOutboundByProductId.getOrDefault(product.getId(), 0)
                 ))
-                // Only return actionable recommendations.
                 .filter(this::shouldIncludeRecommendation)
-                // Sort by urgency first, then by bigger reorder need.
                 .sorted(
                         Comparator
                                 .comparingInt((ReplenishmentRecommendationResponse response) ->
@@ -206,10 +204,32 @@ public class ProductService {
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
 
-        // On update, prevent reassignment to an inactive location.
-        // If the product already belongs to that same location, allow keeping it.
+        // The regular update endpoint still supports storage location changes.
+        // The dedicated relocation endpoint below is the more warehouse-specific flow.
         product.setStorageLocation(resolveStorageLocationForUpdate(product, request.getStorageLocationId()));
 
+        productRepository.save(product);
+
+        return mapToResponse(getProductWithStorageLocation(product.getId()));
+    }
+
+    @Transactional
+    public ProductResponse relocateProduct(Long productId, Long targetStorageLocationId) {
+        Product product = getProductByIdOrThrow(productId);
+        StorageLocation targetStorageLocation = getStorageLocationByIdOrThrow(targetStorageLocationId);
+
+        // Relocation to the exact same location is not a meaningful warehouse action.
+        if (isSameStorageLocation(product.getStorageLocation(), targetStorageLocation)) {
+            throw new ResourceConflictException(
+                    "Product with id " + productId
+                            + " is already assigned to storage location with id " + targetStorageLocationId
+            );
+        }
+
+        // Products may only be relocated into active storage locations.
+        validateStorageLocationIsActive(targetStorageLocation);
+
+        product.setStorageLocation(targetStorageLocation);
         productRepository.save(product);
 
         return mapToResponse(getProductWithStorageLocation(product.getId()));
@@ -286,8 +306,7 @@ public class ProductService {
 
         StorageLocation targetStorageLocation = getStorageLocationByIdOrThrow(storageLocationId);
 
-        // Allow keeping the same already assigned location, even if it is now inactive.
-        // This avoids blocking unrelated product edits just because the location was deactivated later.
+        // Allow keeping the same already assigned location, even if it became inactive later.
         if (isSameStorageLocation(product.getStorageLocation(), targetStorageLocation)) {
             return targetStorageLocation;
         }
@@ -403,10 +422,7 @@ public class ProductService {
         int minimumQuantity = normalizeMinimumQuantity(product.getMinimumQuantity());
         int safeRecentOutboundQuantity = Math.max(recentOutboundQuantity, 0);
 
-        // Shortage shows how far below the threshold the product currently is.
         int shortageQuantity = Math.max(minimumQuantity - currentQuantity, 0);
-
-        // Reorder quantity combines shortage and recent demand pressure.
         int recommendedReorderQuantity = shortageQuantity + safeRecentOutboundQuantity;
 
         return new ReplenishmentRecommendationResponse(

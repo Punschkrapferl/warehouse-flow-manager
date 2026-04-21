@@ -4,6 +4,7 @@ import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
 import com.example.warehouseflowmanager.common.dto.PagedResponse;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
+import com.example.warehouseflowmanager.product.dto.RelocateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ReplenishmentRecommendationResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
@@ -28,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -43,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @Tag(
         name = "Products",
-        description = "Manage warehouse products, filtering, pagination, sorting, low-stock tracking, and replenishment recommendations"
+        description = "Manage warehouse products, filtering, pagination, sorting, low-stock tracking, replenishment recommendations, and relocation between storage locations"
 )
 public class ProductController {
 
@@ -86,6 +88,55 @@ public class ProductController {
             CreateProductRequest request
     ) {
         return productService.createProduct(request);
+    }
+
+    @PatchMapping("/{id}/storage-location")
+    @Operation(
+            summary = "Relocate product",
+            description = """
+                    Relocates a product to a different storage location without changing its quantity or other master data.
+                    The target storage location must exist, must be active, and must differ from the current location.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Product relocated successfully"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed for the product ID or relocation payload",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product or target storage location not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Relocation conflicts with business rules, such as relocating to the same or an inactive storage location",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
+    })
+    public ProductResponse relocateProduct(
+            @PathVariable
+            @Positive(message = "Product ID must be greater than 0")
+            @Parameter(description = "Product ID", example = "1")
+            Long id,
+
+            @Valid
+            @RequestBody
+            @Parameter(description = "Target storage location for relocation")
+            RelocateProductRequest request
+    ) {
+        return productService.relocateProduct(id, request.storageLocationId());
     }
 
     @GetMapping("/low-stock")
@@ -241,6 +292,7 @@ public class ProductController {
                     Updates product metadata such as SKU, name, description, unit, minimum quantity, status, and storage location.
                     Quantity cannot be changed through this endpoint and must be changed through stock movements instead.
                     Products cannot be assigned to inactive storage locations.
+                    For a dedicated warehouse relocation flow, use the product relocation endpoint.
                     """
     )
     @ApiResponses({

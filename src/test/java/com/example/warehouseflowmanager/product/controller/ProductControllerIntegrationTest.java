@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,7 +47,6 @@ class ProductControllerIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanUpTestData() {
-        // Remove stock movements for all test products first because of foreign key dependencies.
         jdbcTemplate.update("""
                 DELETE FROM stock_movements
                 WHERE product_id IN (
@@ -56,13 +56,11 @@ class ProductControllerIntegrationTest {
                 )
                 """, TEST_SKU_PREFIX + "%");
 
-        // Remove test products next.
         jdbcTemplate.update("""
                 DELETE FROM products
                 WHERE sku LIKE ?
                 """, TEST_SKU_PREFIX + "%");
 
-        // Remove test storage locations last, after products are gone.
         jdbcTemplate.update("""
                 DELETE FROM storage_locations
                 WHERE code LIKE ?
@@ -236,10 +234,105 @@ class ProductControllerIntegrationTest {
                         .value("Storage location with id " + inactiveStorageLocationId
                                 + " is inactive and cannot be assigned to a product"));
 
-        // Verify the product still points to the original active location after the failed update.
         mockMvc.perform(get("/api/products/{id}", productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.storageLocationId").value(activeStorageLocationId));
+    }
+
+    @Test
+    void shouldRelocateProductToAnotherActiveStorageLocation() throws Exception {
+        Long sourceStorageLocationId = createStorageLocationAndReturnId(true);
+        Long targetStorageLocationId = createStorageLocationAndReturnId(true);
+
+        String sku = TEST_SKU_PREFIX + "RELOCATE-SUCCESS-" + UUID.randomUUID();
+        long productId = createProductAndReturnId(
+                sku,
+                "Relocation Test Product",
+                5,
+                1,
+                "ACTIVE",
+                sourceStorageLocationId
+        );
+
+        String requestBody = """
+                {
+                  "storageLocationId": %d
+                }
+                """.formatted(targetStorageLocationId);
+
+        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(productId))
+                .andExpect(jsonPath("$.storageLocationId").value(targetStorageLocationId));
+
+        mockMvc.perform(get("/api/products/{id}", productId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storageLocationId").value(targetStorageLocationId));
+    }
+
+    @Test
+    void shouldRejectRelocationToInactiveStorageLocation() throws Exception {
+        Long sourceStorageLocationId = createStorageLocationAndReturnId(true);
+        Long inactiveStorageLocationId = createStorageLocationAndReturnId(false);
+
+        String sku = TEST_SKU_PREFIX + "RELOCATE-INACTIVE-" + UUID.randomUUID();
+        long productId = createProductAndReturnId(
+                sku,
+                "Relocation Inactive Test Product",
+                5,
+                1,
+                "ACTIVE",
+                sourceStorageLocationId
+        );
+
+        String requestBody = """
+                {
+                  "storageLocationId": %d
+                }
+                """.formatted(inactiveStorageLocationId);
+
+        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Storage location with id " + inactiveStorageLocationId
+                                + " is inactive and cannot be assigned to a product"));
+
+        mockMvc.perform(get("/api/products/{id}", productId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storageLocationId").value(sourceStorageLocationId));
+    }
+
+    @Test
+    void shouldRejectRelocationToSameStorageLocation() throws Exception {
+        Long storageLocationId = createStorageLocationAndReturnId(true);
+
+        String sku = TEST_SKU_PREFIX + "RELOCATE-SAME-" + UUID.randomUUID();
+        long productId = createProductAndReturnId(
+                sku,
+                "Relocation Same Location Product",
+                5,
+                1,
+                "ACTIVE",
+                storageLocationId
+        );
+
+        String requestBody = """
+                {
+                  "storageLocationId": %d
+                }
+                """.formatted(storageLocationId);
+
+        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Product with id " + productId
+                                + " is already assigned to storage location with id " + storageLocationId));
     }
 
     @Test
@@ -291,7 +384,6 @@ class ProductControllerIntegrationTest {
         long highProductId = createProductAndReturnId(highSku, "High Product", 4, 10, "ACTIVE", null);
         long mediumProductId = createProductAndReturnId(mediumSku, "Medium Product", 10, 10, "ACTIVE", null);
 
-        // Add recent outbound history so the replenishment calculation can combine shortage and demand.
         insertOutboundMovement(highProductId, 2, Instant.now().minusSeconds(5L * 24 * 60 * 60));
         insertOutboundMovement(mediumProductId, 3, Instant.now().minusSeconds(3L * 24 * 60 * 60));
 
@@ -334,8 +426,6 @@ class ProductControllerIntegrationTest {
         assertTrue(mediumIndex >= 0);
         assertTrue(criticalIndex < highIndex);
         assertTrue(highIndex < mediumIndex);
-
-        // Keep this assertion so the created ID is still explicitly used in the test.
         assertTrue(criticalProductId > 0);
     }
 
@@ -354,8 +444,6 @@ class ProductControllerIntegrationTest {
 
         int zeroRecommendationIndex = findRecommendationIndexBySku(responseJson, zeroRecommendationSku);
 
-        // The repository candidate query may still include this product,
-        // but the service should filter it out because the final reorder quantity is 0.
         assertEquals(-1, zeroRecommendationIndex);
     }
 

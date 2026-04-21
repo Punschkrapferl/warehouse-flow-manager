@@ -10,9 +10,6 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI warehouseFlowManagerOpenApi() {
-        // Central OpenAPI metadata used by Swagger UI and generated API docs.
-        // Keep this description short and recruiter-friendly so the project is easy
-        // to understand during quick review.
         return new OpenAPI()
                 .info(new Info()
                         .title("Warehouse Flow Manager API")
@@ -22,6 +19,7 @@ public class OpenApiConfig {
 
                                 Main capabilities:
                                 - Product CRUD with filtering, pagination, and sorting
+                                - Product relocation between storage locations
                                 - Storage location CRUD and stock overview
                                 - Stock movements with INBOUND, OUTBOUND, and ADJUSTMENT flows
                                 - Low-stock tracking
