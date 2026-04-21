@@ -57,6 +57,7 @@ public class ProductController {
                     Creates a new product.
                     If an initial quantity greater than zero is provided, an initial INBOUND stock movement is created automatically.
                     Blocked products cannot be created with initial stock.
+                    Products cannot be assigned to inactive storage locations.
                     """
     )
     @ApiResponses({
@@ -71,7 +72,7 @@ public class ProductController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "A conflicting product already exists",
+                    description = "A conflicting product already exists or the selected storage location is inactive",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiErrorResponse.class)
@@ -239,6 +240,7 @@ public class ProductController {
             description = """
                     Updates product metadata such as SKU, name, description, unit, minimum quantity, status, and storage location.
                     Quantity cannot be changed through this endpoint and must be changed through stock movements instead.
+                    Products cannot be assigned to inactive storage locations.
                     """
     )
     @ApiResponses({
@@ -261,7 +263,7 @@ public class ProductController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Update would create a conflict",
+                    description = "Update would create a conflict or assign the product to an inactive storage location",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiErrorResponse.class)

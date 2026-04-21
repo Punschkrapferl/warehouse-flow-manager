@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,6 +33,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class ProductControllerIntegrationTest {
 
     private static final String TEST_SKU_PREFIX = "TEST-";
+    private static final String TEST_STORAGE_LOCATION_CODE_PREFIX = "TEST-LOC-";
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,6 +46,7 @@ class ProductControllerIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanUpTestData() {
+        // Remove stock movements for all test products first because of foreign key dependencies.
         jdbcTemplate.update("""
                 DELETE FROM stock_movements
                 WHERE product_id IN (
@@ -53,10 +56,17 @@ class ProductControllerIntegrationTest {
                 )
                 """, TEST_SKU_PREFIX + "%");
 
+        // Remove test products next.
         jdbcTemplate.update("""
                 DELETE FROM products
                 WHERE sku LIKE ?
                 """, TEST_SKU_PREFIX + "%");
+
+        // Remove test storage locations last, after products are gone.
+        jdbcTemplate.update("""
+                DELETE FROM storage_locations
+                WHERE code LIKE ?
+                """, TEST_STORAGE_LOCATION_CODE_PREFIX + "%");
     }
 
     @Test
@@ -156,6 +166,83 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
+    void shouldRejectCreateProductWhenStorageLocationIsInactive() throws Exception {
+        Long inactiveStorageLocationId = createStorageLocationAndReturnId(false);
+        String sku = TEST_SKU_PREFIX + "INACTIVE-CREATE-" + UUID.randomUUID();
+
+        String requestBody = """
+                {
+                  "sku": "%s",
+                  "name": "Inactive Location Product",
+                  "description": "Should be rejected because location is inactive",
+                  "unit": "piece",
+                  "quantity": 5,
+                  "minimumQuantity": 1,
+                  "status": "ACTIVE",
+                  "storageLocationId": %d
+                }
+                """.formatted(sku, inactiveStorageLocationId);
+
+        mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Storage location with id " + inactiveStorageLocationId
+                                + " is inactive and cannot be assigned to a product"));
+
+        Long productCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM products
+                WHERE sku = ?
+                """, Long.class, sku);
+
+        assertNotNull(productCount);
+        assertEquals(0L, productCount);
+    }
+
+    @Test
+    void shouldRejectReassigningProductToInactiveStorageLocation() throws Exception {
+        Long activeStorageLocationId = createStorageLocationAndReturnId(true);
+        Long inactiveStorageLocationId = createStorageLocationAndReturnId(false);
+
+        String sku = TEST_SKU_PREFIX + "INACTIVE-UPDATE-" + UUID.randomUUID();
+        long productId = createProductAndReturnId(
+                sku,
+                "Update Test Product",
+                5,
+                1,
+                "ACTIVE",
+                activeStorageLocationId
+        );
+
+        String updateRequestBody = """
+                {
+                  "sku": "%s",
+                  "name": "Update Test Product",
+                  "description": "Attempt to reassign to inactive location",
+                  "unit": "piece",
+                  "minimumQuantity": 1,
+                  "status": "ACTIVE",
+                  "storageLocationId": %d
+                }
+                """.formatted(sku, inactiveStorageLocationId);
+
+        mockMvc.perform(put("/api/products/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Storage location with id " + inactiveStorageLocationId
+                                + " is inactive and cannot be assigned to a product"));
+
+        // Verify the product still points to the original active location after the failed update.
+        mockMvc.perform(get("/api/products/{id}", productId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storageLocationId").value(activeStorageLocationId));
+    }
+
+    @Test
     void shouldRejectNegativeProductId() throws Exception {
         mockMvc.perform(get("/api/products/{id}", -1))
                 .andExpect(status().isBadRequest())
@@ -200,11 +287,11 @@ class ProductControllerIntegrationTest {
         String highSku = TEST_SKU_PREFIX + "REPL-HIGH-" + UUID.randomUUID();
         String mediumSku = TEST_SKU_PREFIX + "REPL-MEDIUM-" + UUID.randomUUID();
 
-        long criticalProductId = createProductAndReturnId(criticalSku, "Critical Product", 0, 10, "ACTIVE");
-        long highProductId = createProductAndReturnId(highSku, "High Product", 4, 10, "ACTIVE");
-        long mediumProductId = createProductAndReturnId(mediumSku, "Medium Product", 10, 10, "ACTIVE");
+        long criticalProductId = createProductAndReturnId(criticalSku, "Critical Product", 0, 10, "ACTIVE", null);
+        long highProductId = createProductAndReturnId(highSku, "High Product", 4, 10, "ACTIVE", null);
+        long mediumProductId = createProductAndReturnId(mediumSku, "Medium Product", 10, 10, "ACTIVE", null);
 
-        // Add recent outbound demand so the endpoint has realistic demand history to evaluate.
+        // Add recent outbound history so the replenishment calculation can combine shortage and demand.
         insertOutboundMovement(highProductId, 2, Instant.now().minusSeconds(5L * 24 * 60 * 60));
         insertOutboundMovement(mediumProductId, 3, Instant.now().minusSeconds(3L * 24 * 60 * 60));
 
@@ -242,14 +329,13 @@ class ProductControllerIntegrationTest {
         int highIndex = findRecommendationIndexBySku(responseJson, highSku);
         int mediumIndex = findRecommendationIndexBySku(responseJson, mediumSku);
 
-        // The endpoint should return results in useful operational order.
         assertTrue(criticalIndex >= 0);
         assertTrue(highIndex >= 0);
         assertTrue(mediumIndex >= 0);
         assertTrue(criticalIndex < highIndex);
         assertTrue(highIndex < mediumIndex);
 
-        // Avoid "unused variable" warnings in case you want to inspect them later or extend the test.
+        // Keep this assertion so the created ID is still explicitly used in the test.
         assertTrue(criticalProductId > 0);
     }
 
@@ -257,7 +343,7 @@ class ProductControllerIntegrationTest {
     void shouldNotReturnRecommendationWhenCalculatedReorderQuantityIsZero() throws Exception {
         String zeroRecommendationSku = TEST_SKU_PREFIX + "REPL-ZERO-" + UUID.randomUUID();
 
-        createProductAndReturnId(zeroRecommendationSku, "Zero Recommendation Product", 0, 0, "ACTIVE");
+        createProductAndReturnId(zeroRecommendationSku, "Zero Recommendation Product", 0, 0, "ACTIVE", null);
 
         MvcResult result = mockMvc.perform(get("/api/products/replenishment-candidates")
                         .param("recentDays", "30"))
@@ -268,7 +354,7 @@ class ProductControllerIntegrationTest {
 
         int zeroRecommendationIndex = findRecommendationIndexBySku(responseJson, zeroRecommendationSku);
 
-        // The product still matches the repository candidate query (0 <= 0),
+        // The repository candidate query may still include this product,
         // but the service should filter it out because the final reorder quantity is 0.
         assertEquals(-1, zeroRecommendationIndex);
     }
@@ -295,24 +381,42 @@ class ProductControllerIntegrationTest {
                         .value("Malformed JSON request or invalid field value"));
     }
 
+    private Long createStorageLocationAndReturnId(boolean active) {
+        String code = TEST_STORAGE_LOCATION_CODE_PREFIX + UUID.randomUUID();
+        String zone = active ? "ZONE-ACTIVE" : "ZONE-INACTIVE";
+        String description = active
+                ? "Active storage location created by integration test"
+                : "Inactive storage location created by integration test";
+
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO storage_locations (code, zone, description, active)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """, Long.class, code, zone, description, active);
+    }
+
     private long createProductAndReturnId(
             String sku,
             String name,
             int quantity,
             int minimumQuantity,
-            String status
+            String status,
+            Long storageLocationId
     ) throws Exception {
+        String storageLocationIdValue = storageLocationId != null ? storageLocationId.toString() : "null";
+
         String requestBody = """
                 {
                   "sku": "%s",
                   "name": "%s",
-                  "description": "Created by replenishment integration test",
+                  "description": "Created by product integration test",
                   "unit": "piece",
                   "quantity": %d,
                   "minimumQuantity": %d,
-                  "status": "%s"
+                  "status": "%s",
+                  "storageLocationId": %s
                 }
-                """.formatted(sku, name, quantity, minimumQuantity, status);
+                """.formatted(sku, name, quantity, minimumQuantity, status, storageLocationIdValue);
 
         MvcResult result = mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)

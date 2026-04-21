@@ -74,7 +74,9 @@ public class ProductService {
         product.setQuantity(request.getQuantity());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(productStatus);
-        product.setStorageLocation(resolveStorageLocation(request.getStorageLocationId()));
+
+        // On creation, assigning an inactive storage location is not allowed.
+        product.setStorageLocation(resolveStorageLocationForCreate(request.getStorageLocationId()));
 
         Product savedProduct = productRepository.save(product);
 
@@ -137,7 +139,7 @@ public class ProductService {
                 .map(Product::getId)
                 .toList();
 
-        // Look back over the requested window to estimate recent outbound demand.
+        // Look back over the requested time window to estimate recent outbound demand.
         Instant cutoff = Instant.now().minus(Duration.ofDays(recentDays));
 
         Map<Long, Integer> recentOutboundByProductId = stockMovementRepository
@@ -159,11 +161,9 @@ public class ProductService {
                         product,
                         recentOutboundByProductId.getOrDefault(product.getId(), 0)
                 ))
-                // Keep the endpoint business-clean:
-                // if the final reorder quantity is 0, there is nothing actionable to recommend.
+                // Only return actionable recommendations.
                 .filter(this::shouldIncludeRecommendation)
-                // Sort the output in a useful warehouse-facing order:
-                // highest urgency first, then larger reorder need first.
+                // Sort by urgency first, then by bigger reorder need.
                 .sorted(
                         Comparator
                                 .comparingInt((ReplenishmentRecommendationResponse response) ->
@@ -205,7 +205,10 @@ public class ProductService {
         product.setUnit(request.getUnit().trim());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
-        product.setStorageLocation(resolveStorageLocation(request.getStorageLocationId()));
+
+        // On update, prevent reassignment to an inactive location.
+        // If the product already belongs to that same location, allow keeping it.
+        product.setStorageLocation(resolveStorageLocationForUpdate(product, request.getStorageLocationId()));
 
         productRepository.save(product);
 
@@ -266,15 +269,55 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
     }
 
-    private StorageLocation resolveStorageLocation(Long storageLocationId) {
+    private StorageLocation resolveStorageLocationForCreate(Long storageLocationId) {
         if (storageLocationId == null) {
             return null;
         }
 
+        StorageLocation storageLocation = getStorageLocationByIdOrThrow(storageLocationId);
+        validateStorageLocationIsActive(storageLocation);
+        return storageLocation;
+    }
+
+    private StorageLocation resolveStorageLocationForUpdate(Product product, Long storageLocationId) {
+        if (storageLocationId == null) {
+            return null;
+        }
+
+        StorageLocation targetStorageLocation = getStorageLocationByIdOrThrow(storageLocationId);
+
+        // Allow keeping the same already assigned location, even if it is now inactive.
+        // This avoids blocking unrelated product edits just because the location was deactivated later.
+        if (isSameStorageLocation(product.getStorageLocation(), targetStorageLocation)) {
+            return targetStorageLocation;
+        }
+
+        validateStorageLocationIsActive(targetStorageLocation);
+        return targetStorageLocation;
+    }
+
+    private StorageLocation getStorageLocationByIdOrThrow(Long storageLocationId) {
         return storageLocationRepository.findById(storageLocationId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Storage location with id " + storageLocationId + " not found"
                 ));
+    }
+
+    private void validateStorageLocationIsActive(StorageLocation storageLocation) {
+        if (!Boolean.TRUE.equals(storageLocation.getActive())) {
+            throw new ResourceConflictException(
+                    "Storage location with id " + storageLocation.getId()
+                            + " is inactive and cannot be assigned to a product"
+            );
+        }
+    }
+
+    private boolean isSameStorageLocation(StorageLocation currentStorageLocation, StorageLocation targetStorageLocation) {
+        if (currentStorageLocation == null || currentStorageLocation.getId() == null) {
+            return false;
+        }
+
+        return currentStorageLocation.getId().equals(targetStorageLocation.getId());
     }
 
     private Integer normalizeMinimumQuantity(Integer minimumQuantity) {
@@ -360,10 +403,10 @@ public class ProductService {
         int minimumQuantity = normalizeMinimumQuantity(product.getMinimumQuantity());
         int safeRecentOutboundQuantity = Math.max(recentOutboundQuantity, 0);
 
-        // Shortage tells us how far below the threshold the product currently is.
+        // Shortage shows how far below the threshold the product currently is.
         int shortageQuantity = Math.max(minimumQuantity - currentQuantity, 0);
 
-        // Reorder quantity combines static shortage with recent demand pressure.
+        // Reorder quantity combines shortage and recent demand pressure.
         int recommendedReorderQuantity = shortageQuantity + safeRecentOutboundQuantity;
 
         return new ReplenishmentRecommendationResponse(
@@ -387,18 +430,14 @@ public class ProductService {
             int minimumQuantity,
             int recentOutboundQuantity
     ) {
-        // No stock on hand is the most urgent case.
         if (currentQuantity <= 0) {
             return PRIORITY_CRITICAL;
         }
 
-        // Already below the minimum threshold means the product needs fast attention.
         if (currentQuantity < minimumQuantity) {
             return PRIORITY_HIGH;
         }
 
-        // Even if the product is only exactly at the threshold, strong recent outbound
-        // demand should still increase urgency.
         int highDemandThreshold = Math.max(1, minimumQuantity / 2);
         if (recentOutboundQuantity >= highDemandThreshold) {
             return PRIORITY_HIGH;
