@@ -25,6 +25,7 @@ public class OpenApiConfig {
                                 - Storage location CRUD and stock overview
                                 - Stock movements with INBOUND, OUTBOUND, and ADJUSTMENT flows
                                 - Low-stock tracking
+                                - Replenishment recommendations based on stock shortage and recent outbound demand
                                 - Validation-aware error responses
                                 """));
     }

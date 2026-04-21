@@ -1,13 +1,16 @@
 package com.example.warehouseflowmanager.product.controller;
 
+import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
 import com.example.warehouseflowmanager.common.dto.PagedResponse;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
+import com.example.warehouseflowmanager.product.dto.ReplenishmentRecommendationResponse;
 import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -40,7 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @Tag(
         name = "Products",
-        description = "Manage warehouse products, filtering, pagination, sorting, and low-stock tracking"
+        description = "Manage warehouse products, filtering, pagination, sorting, low-stock tracking, and replenishment recommendations"
 )
 public class ProductController {
 
@@ -58,8 +61,22 @@ public class ProductController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Product created successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed or business rule rejected the request"),
-            @ApiResponse(responseCode = "409", description = "A conflicting product already exists")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed or business rule rejected the request",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "A conflicting product already exists",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public ProductResponse createProduct(
             @Valid
@@ -82,6 +99,36 @@ public class ProductController {
         return productService.getLowStockProducts();
     }
 
+    @GetMapping("/replenishment-candidates")
+    @Operation(
+            summary = "Get replenishment candidates",
+            description = """
+                    Returns active products that currently need replenishment.
+                    Recommendations are calculated from current shortage against minimum quantity
+                    plus recent outbound demand, then sorted by business priority.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Replenishment candidates retrieved successfully"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed for the recentDays parameter",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
+    })
+    public List<ReplenishmentRecommendationResponse> getReplenishmentCandidates(
+            @RequestParam(defaultValue = "30")
+            @Positive(message = "recentDays must be greater than 0")
+            @Max(value = 365, message = "recentDays must not be greater than 365")
+            @Parameter(description = "Number of recent days used to evaluate outbound demand", example = "30")
+            int recentDays
+    ) {
+        return productService.getReplenishmentCandidates(recentDays);
+    }
+
     @GetMapping
     @Operation(
             summary = "Get products",
@@ -92,7 +139,14 @@ public class ProductController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed for one or more query parameters")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed for one or more query parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public PagedResponse<ProductResponse> getProducts(
             @RequestParam(required = false)
@@ -153,8 +207,22 @@ public class ProductController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Product retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid product ID"),
-            @ApiResponse(responseCode = "404", description = "Product not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid product ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public ProductResponse getProductById(
             @PathVariable
@@ -175,9 +243,30 @@ public class ProductController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Product updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed or quantity update was attempted"),
-            @ApiResponse(responseCode = "404", description = "Product not found"),
-            @ApiResponse(responseCode = "409", description = "Update would create a conflict")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed or quantity update was attempted",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Update would create a conflict",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public ProductResponse updateProduct(
             @PathVariable
@@ -201,9 +290,30 @@ public class ProductController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid product ID"),
-            @ApiResponse(responseCode = "404", description = "Product not found"),
-            @ApiResponse(responseCode = "409", description = "Product cannot be deleted because of business rules")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid product ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Product cannot be deleted because of business rules",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public void deleteProduct(
             @PathVariable

@@ -82,4 +82,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
            order by p.quantity asc, p.name asc
            """)
     List<Product> findLowStockProducts(@Param("status") ProductStatus status);
+
+    @EntityGraph(attributePaths = "storageLocation")
+    @Query("""
+           select p
+           from Product p
+           where p.status = :status
+             and p.quantity <= coalesce(p.minimumQuantity, 0)
+           order by p.quantity asc, p.name asc
+           """)
+    List<Product> findReplenishmentCandidates(@Param("status") ProductStatus status);
 }
