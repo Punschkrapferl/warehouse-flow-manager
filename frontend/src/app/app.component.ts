@@ -26,5 +26,10 @@ export class AppComponent {
       route: '/products',
       caption: 'Stock ledger and item visibility',
     },
+    {
+      label: 'Storage Locations',
+      route: '/storage-locations',
+      caption: 'Zones and assigned inventory',
+    },
   ];
 }

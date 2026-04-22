@@ -57,3 +57,34 @@ export interface ReplenishmentRecommendationResponse {
   storageLocationId: number | null;
   storageLocationCode: string | null;
 }
+
+export interface StorageLocationResponse {
+  id: number;
+  code: string;
+  zone: string;
+  description: string | null;
+  active: boolean;
+}
+
+export interface StorageLocationStockItemResponse {
+  id: number;
+  sku: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  minimumQuantity: number;
+  status: ProductStatus;
+  lowStock: boolean;
+}
+
+export interface StorageLocationStockOverviewResponse {
+  id: number;
+  code: string;
+  zone: string;
+  description: string | null;
+  active: boolean;
+  totalProducts: number;
+  totalQuantity: number;
+  lowStockProductCount: number;
+  products: StorageLocationStockItemResponse[];
+}

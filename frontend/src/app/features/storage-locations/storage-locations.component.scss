@@ -1,0 +1,248 @@
+.storage-locations-console {
+  gap: 1rem;
+}
+
+.storage-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.location-directory,
+.location-overview {
+  overflow: hidden;
+}
+
+.location-directory__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.directory-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.directory-metric {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.75rem;
+}
+
+.directory-metric__label {
+  display: block;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.directory-metric__value {
+  display: block;
+  margin-top: 0.25rem;
+  color: #f8fbff;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-card {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.9rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.location-card:hover {
+  border-color: rgba(56, 189, 248, 0.26);
+  background: rgba(56, 189, 248, 0.05);
+  transform: translateY(-1px);
+}
+
+.location-card--selected {
+  border-color: rgba(56, 189, 248, 0.38);
+  background: linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.12),
+      rgba(56, 189, 248, 0.03)
+  );
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.08);
+}
+
+.location-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.location-card__code {
+  color: #f8fbff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.location-card__zone {
+  margin-top: 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.location-card__description {
+  margin-top: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.location-overview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.location-overview__hint {
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.overview-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.1),
+      rgba(15, 23, 42, 0.18)
+  );
+  padding: 1rem;
+}
+
+.overview-hero__eyebrow {
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overview-hero__title {
+  margin: 0.35rem 0 0;
+  color: #f8fbff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.overview-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.overview-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.overview-kpi {
+  padding: 1rem;
+  border-color: var(--border-strong);
+}
+
+.overview-kpi__label {
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overview-kpi__value {
+  margin-top: 0.35rem;
+  color: #f8fbff;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.overview-kpi__meta {
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sku-cell {
+  color: #dbeafe;
+  font-weight: 700;
+}
+
+.product-name {
+  font-weight: 700;
+  color: #f8fbff;
+}
+
+.product-meta {
+  margin-top: 0.18rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1180px) {
+  .storage-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .overview-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .directory-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .location-card__top,
+  .location-overview__header,
+  .overview-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

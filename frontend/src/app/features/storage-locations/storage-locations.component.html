@@ -1,0 +1,250 @@
+<div class="page storage-locations-console">
+  <div class="page__header">
+    <div>
+      <div class="page__eyebrow">Location visibility</div>
+      <h2 class="page__title">Storage locations</h2>
+      <p class="page__subtitle">
+        Inspect warehouse zones, active location availability, assigned stock, and
+        low-stock exposure per storage location.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button class="button button--secondary" type="button" (click)="loadStorageLocations()">
+        Refresh locations
+      </button>
+
+      <button
+        class="button button--primary"
+        type="button"
+        (click)="refreshSelectedOverview()"
+        [disabled]="selectedLocationId === null"
+      >
+        Refresh overview
+      </button>
+    </div>
+  </div>
+
+  @if (errorMessage) {
+    <div class="state-message state-message--error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <div class="storage-layout">
+    <section class="card location-directory">
+      <div class="card__header">
+        <h3 class="card__title">Location directory</h3>
+        <p class="card__subtitle">
+          Select a storage location to inspect its current stock overview.
+        </p>
+      </div>
+
+      <div class="card__body">
+        <div class="location-directory__toolbar">
+          <div class="form-field">
+            <label for="location-search">Search locations</label>
+            <input
+              id="location-search"
+              type="text"
+              placeholder="Search by code, zone, or description"
+              [(ngModel)]="searchTerm"
+            />
+          </div>
+
+          <div class="directory-metrics">
+            <div class="directory-metric">
+              <span class="directory-metric__label">Total</span>
+              <span class="directory-metric__value">{{ storageLocations.length }}</span>
+            </div>
+
+            <div class="directory-metric">
+              <span class="directory-metric__label">Active</span>
+              <span class="directory-metric__value">{{ activeLocationCount }}</span>
+            </div>
+
+            <div class="directory-metric">
+              <span class="directory-metric__label">Inactive</span>
+              <span class="directory-metric__value">{{ inactiveLocationCount }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (loadingLocations) {
+          <div class="state-message">
+            Loading storage locations...
+          </div>
+        }
+
+        @if (!loadingLocations && filteredLocations.length === 0) {
+          <div class="table-empty">
+            No storage locations found for the current search.
+          </div>
+        }
+
+        @if (!loadingLocations && filteredLocations.length > 0) {
+          <div class="location-list">
+            @for (location of filteredLocations; track location.id) {
+              <button
+                class="location-card"
+                type="button"
+                (click)="selectLocation(location.id)"
+                [class.location-card--selected]="selectedLocationId === location.id"
+              >
+                <div class="location-card__top">
+                  <div>
+                    <div class="location-card__code">{{ location.code }}</div>
+                    <div class="location-card__zone">{{ location.zone }}</div>
+                  </div>
+
+                  <span [class]="locationStatusClass(location.active)">
+                    {{ location.active ? 'Active' : 'Inactive' }}
+                  </span>
+                </div>
+
+                <div class="location-card__description">
+                  {{ location.description || 'No description provided.' }}
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="card location-overview">
+      <div class="card__header">
+        <div class="location-overview__header">
+          <div>
+            <h3 class="card__title">Stock overview</h3>
+            <p class="card__subtitle">
+              Detailed location-level view of assigned products and stock pressure.
+            </p>
+          </div>
+
+          <div class="location-overview__hint">
+            {{ selectedLocationLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div class="card__body">
+        @if (!loadingLocations && storageLocations.length === 0) {
+          <div class="table-empty">
+            No storage locations are available yet.
+          </div>
+        }
+
+        @if (loadingOverview) {
+          <div class="state-message">
+            Loading selected location overview...
+          </div>
+        }
+
+        @if (!loadingOverview && selectedOverview) {
+          <div class="overview-hero">
+            <div class="overview-hero__content">
+              <div class="overview-hero__eyebrow">Selected location</div>
+              <h3 class="overview-hero__title">{{ selectedOverview.code }}</h3>
+              <div class="overview-hero__meta">
+                <span>{{ selectedOverview.zone }}</span>
+                <span>·</span>
+                <span>{{ selectedOverview.description || 'No description provided' }}</span>
+              </div>
+            </div>
+
+            <div class="overview-hero__badges">
+              <span [class]="locationStatusClass(selectedOverview.active)">
+                {{ selectedOverview.active ? 'Active location' : 'Inactive location' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="overview-kpis">
+            <article class="card overview-kpi">
+              <div class="overview-kpi__label">Assigned products</div>
+              <div class="overview-kpi__value">{{ selectedOverview.totalProducts }}</div>
+              <div class="overview-kpi__meta">Total product records at this location</div>
+            </article>
+
+            <article class="card overview-kpi">
+              <div class="overview-kpi__label">Total quantity</div>
+              <div class="overview-kpi__value">{{ selectedOverview.totalQuantity }}</div>
+              <div class="overview-kpi__meta">Combined on-hand quantity at this location</div>
+            </article>
+
+            <article class="card overview-kpi">
+              <div class="overview-kpi__label">Low-stock items</div>
+              <div class="overview-kpi__value">{{ selectedOverview.lowStockProductCount }}</div>
+              <div class="overview-kpi__meta">Products below or at minimum threshold</div>
+            </article>
+          </div>
+
+          @if (selectedOverview.products.length === 0) {
+            <div class="table-empty">
+              No products are currently assigned to this storage location.
+            </div>
+          }
+
+          @if (selectedOverview.products.length > 0) {
+            <div class="table-shell">
+              <table class="data-table data-table--dense">
+                <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Item</th>
+                  <th>Status</th>
+                  <th>On hand</th>
+                  <th>Minimum</th>
+                  <th>Gap</th>
+                  <th>Unit</th>
+                  <th>Low stock</th>
+                </tr>
+                </thead>
+                <tbody>
+                  @for (product of selectedOverview.products; track product.id) {
+                    <tr>
+                      <td class="mono sku-cell">{{ product.sku }}</td>
+                      <td>
+                        <div class="product-name">{{ product.name }}</div>
+                        <div class="product-meta">ID {{ product.id }}</div>
+                      </td>
+                      <td>
+                        <span [class]="statusClass(product.status)">
+                          {{ product.status }}
+                        </span>
+                      </td>
+                      <td>
+                        <span [class]="quantityClass(product)">
+                          {{ product.quantity }}
+                        </span>
+                      </td>
+                      <td>{{ product.minimumQuantity }}</td>
+                      <td>
+                        <span
+                          [class]="
+                            stockGap(product) > 0
+                              ? 'metric-pill metric-pill--warning'
+                              : 'metric-pill metric-pill--neutral'
+                          "
+                        >
+                          {{ stockGap(product) }}
+                        </span>
+                      </td>
+                      <td>{{ product.unit }}</td>
+                      <td>
+                        <span [class]="product.lowStock ? 'badge badge--danger' : 'badge badge--success'">
+                          {{ product.lowStock ? 'Alert' : 'OK' }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      </div>
+    </section>
+  </div>
+</div>
