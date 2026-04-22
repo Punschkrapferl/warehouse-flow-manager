@@ -404,7 +404,7 @@ curl http://localhost:8080/api/products/1/stock-movements
     "movementType": "INBOUND",
     "quantity": 10,
     "resultingQuantity": 10,
-    "note": "Initial stock on product creation",
+    "note": "Initial stock on products creation",
     "movementAt": "2026-04-21T21:00:30Z"
   }
 ]
