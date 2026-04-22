@@ -22,7 +22,7 @@
     </div>
 
     <div class="card__body">
-      <div class="form-grid products-filters">
+      <div class="products-filters">
         <div class="form-field products-filters__search">
           <label for="search">Search</label>
           <input
@@ -34,45 +34,47 @@
           />
         </div>
 
-        <div class="form-field">
-          <label for="status">Status</label>
-          <select id="status" [(ngModel)]="filters.status">
-            @for (status of statuses; track status) {
-              <option [ngValue]="status">{{ status }}</option>
-            }
-          </select>
-        </div>
+        <div class="products-filters__controls">
+          <div class="form-field">
+            <label for="status">Status</label>
+            <select id="status" [(ngModel)]="filters.status">
+              @for (status of statuses; track status) {
+                <option [ngValue]="status">{{ status }}</option>
+              }
+            </select>
+          </div>
 
-        <div class="form-field">
-          <label for="page-size">Page size</label>
-          <select
-            id="page-size"
-            [ngModel]="filters.size"
-            (ngModelChange)="pageSizeChanged($event)"
-          >
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="20">20</option>
-            <option [ngValue]="50">50</option>
-          </select>
-        </div>
+          <div class="form-field">
+            <label for="page-size">Page size</label>
+            <select
+              id="page-size"
+              [ngModel]="filters.size"
+              (ngModelChange)="pageSizeChanged($event)"
+            >
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </div>
 
-        <div class="form-field">
-          <label for="sort-by">Sort by</label>
-          <select id="sort-by" [(ngModel)]="filters.sortBy" (ngModelChange)="applyFilters()">
-            <option value="id">ID</option>
-            <option value="sku">SKU</option>
-            <option value="name">Name</option>
-            <option value="quantity">Quantity</option>
-            <option value="minimumQuantity">Minimum quantity</option>
-          </select>
-        </div>
+          <div class="form-field">
+            <label for="sort-by">Sort by</label>
+            <select id="sort-by" [(ngModel)]="filters.sortBy" (ngModelChange)="applyFilters()">
+              <option value="id">ID</option>
+              <option value="sku">SKU</option>
+              <option value="name">Name</option>
+              <option value="quantity">Quantity</option>
+              <option value="minimumQuantity">Minimum quantity</option>
+            </select>
+          </div>
 
-        <div class="form-field">
-          <label for="direction">Direction</label>
-          <select id="direction" [(ngModel)]="filters.direction" (ngModelChange)="applyFilters()">
-            <option value="asc">Ascending</option>
-            <option value="desc">Descending</option>
-          </select>
+          <div class="form-field">
+            <label for="direction">Direction</label>
+            <select id="direction" [(ngModel)]="filters.direction" (ngModelChange)="applyFilters()">
+              <option value="asc">ASC</option>
+              <option value="desc">DESC</option>
+            </select>
+          </div>
         </div>
 
         <div class="products-filters__buttons">

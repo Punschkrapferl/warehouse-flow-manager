@@ -1,0 +1,234 @@
+<section class="movements-console">
+  <header class="page-hero">
+    <div class="page-hero__content">
+      <p class="page-hero__eyebrow">Movement activity</p>
+      <h1 class="page-hero__title">Stock movement monitoring</h1>
+      <p class="page-hero__description">
+        Monitor inbound, outbound, and adjustment activity across the warehouse,
+        inspect movement history, and review selected scope summaries.
+      </p>
+    </div>
+
+    <div class="page-hero__actions">
+      <button class="button button--ghost" type="button" (click)="refreshData()">
+        Refresh activity
+      </button>
+    </div>
+  </header>
+
+  <section class="ops-panel filter-panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Filter console</h2>
+        <p class="panel-subtitle">
+          Filter movement history by product, movement type, and optional time range.
+        </p>
+      </div>
+    </div>
+
+    <div class="movements-filters">
+      <div class="form-field form-field--product">
+        <label class="field-label" for="productId">Product ID</label>
+        <input
+          id="productId"
+          class="input"
+          type="number"
+          min="1"
+          placeholder="Optional product id"
+          [(ngModel)]="filters.productId"
+        />
+      </div>
+
+      <div class="form-field form-field--movement">
+        <label class="field-label" for="movementType">Movement type</label>
+        <select
+          id="movementType"
+          class="select"
+          [(ngModel)]="filters.movementType"
+        >
+          <option value="ALL">ALL</option>
+          <option value="INBOUND">INBOUND</option>
+          <option value="OUTBOUND">OUTBOUND</option>
+          <option value="ADJUSTMENT">ADJUSTMENT</option>
+        </select>
+      </div>
+
+      <div class="movements-filters__buttons">
+        <button
+          class="button button--primary"
+          type="button"
+          (click)="applyFilters()"
+        >
+          Apply filters
+        </button>
+
+        <button
+          class="button button--ghost"
+          type="button"
+          (click)="resetFilters()"
+        >
+          Reset
+        </button>
+      </div>
+
+      <div class="form-field form-field--date form-field--from">
+        <label class="field-label" for="from">From</label>
+        <input
+          id="from"
+          class="input"
+          type="datetime-local"
+          [(ngModel)]="filters.from"
+        />
+      </div>
+
+      <div class="form-field form-field--date form-field--to">
+        <label class="field-label" for="to">To</label>
+        <input
+          id="to"
+          class="input"
+          type="datetime-local"
+          [(ngModel)]="filters.to"
+        />
+      </div>
+    </div>
+  </section>
+
+  @if (errorMessage) {
+    <div class="alert alert--error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <section class="summary-hero ops-panel">
+    <div class="summary-hero__content">
+      <p class="summary-hero__eyebrow">Selected scope summary</p>
+      <h2 class="summary-hero__title">Movement summary</h2>
+      <div class="summary-hero__meta">
+        <span>
+          Product:
+          {{ summary?.productId ?? 'All products' }}
+        </span>
+        <span>•</span>
+        <span>
+          SKU:
+          {{ summary?.productSku || 'Mixed scope' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="summary-hero__side">
+      <article class="summary-hero__metric">
+        <span class="summary-hero__metric-label">From</span>
+        <span class="summary-hero__metric-value">
+          {{ summary?.from ? (summary?.from | date:'dd.MM.yyyy HH:mm') : 'Not set' }}
+        </span>
+      </article>
+
+      <article class="summary-hero__metric">
+        <span class="summary-hero__metric-label">To</span>
+        <span class="summary-hero__metric-value">
+          {{ summary?.to ? (summary?.to | date:'dd.MM.yyyy HH:mm') : 'Not set' }}
+        </span>
+      </article>
+    </div>
+  </section>
+
+  <section class="movement-kpis">
+    <article class="ops-panel movement-kpi">
+      <div class="movement-kpi__label">Total movements</div>
+      <div class="movement-kpi__value">
+        {{ loadingSummary ? '...' : (summary?.totalMovements ?? 0) }}
+      </div>
+      <div class="movement-kpi__meta">All matching stock movement records</div>
+    </article>
+
+    <article class="ops-panel movement-kpi">
+      <div class="movement-kpi__label">Inbound</div>
+      <div class="movement-kpi__value">
+        {{ loadingSummary ? '...' : (summary?.totalInboundQuantity ?? 0) }}
+      </div>
+      <div class="movement-kpi__meta">
+        {{ loadingSummary ? '...' : (summary?.inboundMovementCount ?? 0) }} inbound movement(s)
+      </div>
+    </article>
+
+    <article class="ops-panel movement-kpi">
+      <div class="movement-kpi__label">Outbound</div>
+      <div class="movement-kpi__value">
+        {{ loadingSummary ? '...' : (summary?.totalOutboundQuantity ?? 0) }}
+      </div>
+      <div class="movement-kpi__meta">
+        {{ loadingSummary ? '...' : (summary?.outboundMovementCount ?? 0) }} outbound movement(s)
+      </div>
+    </article>
+
+    <article class="ops-panel movement-kpi">
+      <div class="movement-kpi__label">Adjustment</div>
+      <div class="movement-kpi__value">
+        {{ loadingSummary ? '...' : (summary?.totalAdjustmentQuantity ?? 0) }}
+      </div>
+      <div class="movement-kpi__meta">
+        {{ loadingSummary ? '...' : (summary?.adjustmentMovementCount ?? 0) }} adjustment movement(s)
+      </div>
+    </article>
+  </section>
+
+  <section class="ops-panel table-panel">
+    <div class="table-panel__header">
+      <div>
+        <h2 class="panel-title">Movement history</h2>
+        <p class="panel-subtitle">
+          {{ loadingMovements ? 'Loading...' : movements.length }} record(s) returned by the backend.
+        </p>
+      </div>
+
+      <div class="table-panel__hint">Newest first</div>
+    </div>
+
+    @if (loadingMovements) {
+      <div class="state-box">
+        Loading stock movements...
+      </div>
+    } @else if (movements.length === 0) {
+      <div class="state-box">
+        No stock movements found for the selected filters.
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Product ID</th>
+            <th>SKU</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Resulting Qty</th>
+            <th>Note</th>
+            <th>Movement At</th>
+          </tr>
+          </thead>
+
+          <tbody>
+            @for (movement of movements; track movement.id) {
+              <tr>
+                <td>
+                  <span class="id-chip">{{ movement.id }}</span>
+                </td>
+                <td>{{ movement.productId }}</td>
+                <td class="movement-sku">{{ movement.productSku }}</td>
+                <td>{{ movement.movementType }}</td>
+                <td>{{ movement.quantity }}</td>
+                <td>{{ movement.resultingQuantity }}</td>
+                <td class="movement-note">
+                  {{ movement.note || '—' }}
+                </td>
+                <td>{{ movement.movementAt | date:'dd.MM.yyyy HH:mm:ss' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>

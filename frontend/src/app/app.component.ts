@@ -31,5 +31,10 @@ export class AppComponent {
       route: '/storage-locations',
       caption: 'Zones and assigned inventory',
     },
+    {
+      label: 'Stock Movements',
+      route: '/stock-movements',
+      caption: 'Inbound, outbound, and adjustments',
+    },
   ];
 }

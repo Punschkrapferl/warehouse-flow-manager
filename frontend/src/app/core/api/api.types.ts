@@ -43,6 +43,22 @@ export interface StockMovementResponse {
   movementAt: string;
 }
 
+export interface StockMovementSummaryResponse {
+  productId: number | null;
+  productSku: string | null;
+  from: string | null;
+  to: string | null;
+  totalMovements: number;
+  inboundMovementCount: number;
+  outboundMovementCount: number;
+  adjustmentMovementCount: number;
+  totalInboundQuantity: number;
+  totalOutboundQuantity: number;
+  totalAdjustmentQuantity: number;
+  currentQuantity: number | null;
+  latestMovementAt: string | null;
+}
+
 export interface ReplenishmentRecommendationResponse {
   productId: number;
   sku: string;
