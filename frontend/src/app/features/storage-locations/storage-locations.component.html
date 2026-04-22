@@ -25,9 +25,11 @@
     </div>
   </header>
 
-  <div *ngIf="errorMessage" class="alert alert--error">
-    {{ errorMessage }}
-  </div>
+  @if (errorMessage) {
+    <div class="alert alert--error">
+      {{ errorMessage }}
+    </div>
+  }
 
   <div class="locations-layout">
     <section class="ops-panel directory-panel">
@@ -70,43 +72,43 @@
       </div>
 
       <div class="directory-list">
-        <div *ngIf="loadingLocations" class="state-box">
-          Loading storage locations...
-        </div>
-
-        <div
-          *ngIf="!loadingLocations && filteredLocations.length === 0"
-          class="state-box"
-        >
-          No storage locations match the current search.
-        </div>
-
-        <button
-          *ngFor="let location of filteredLocations; trackBy: trackByLocationId"
-          type="button"
-          class="location-card"
-          [class.location-card--active]="selectedLocation?.id === location.id"
-          (click)="selectLocation(location)"
-        >
-          <div class="location-card__top">
-            <div>
-              <div class="location-card__code">{{ location.code }}</div>
-              <div class="location-card__zone">{{ location.zone }}</div>
-            </div>
-
-            <span
-              class="status-pill"
-              [class.status-pill--active]="location.active"
-              [class.status-pill--inactive]="!location.active"
-            >
-              {{ location.active ? 'Active' : 'Inactive' }}
-            </span>
+        @if (loadingLocations) {
+          <div class="state-box">
+            Loading storage locations...
           </div>
+        } @else if (filteredLocations.length === 0) {
+          <div class="state-box">
+            No storage locations match the current search.
+          </div>
+        } @else {
+          @for (location of filteredLocations; track location.id) {
+            <button
+              type="button"
+              class="location-card"
+              [class.location-card--active]="selectedLocation?.id === location.id"
+              (click)="selectLocation(location)"
+            >
+              <div class="location-card__top">
+                <div>
+                  <div class="location-card__code">{{ location.code }}</div>
+                  <div class="location-card__zone">{{ location.zone }}</div>
+                </div>
 
-          <p class="location-card__description">
-            {{ location.description || 'No description available.' }}
-          </p>
-        </button>
+                <span
+                  class="status-pill"
+                  [class.status-pill--active]="location.active"
+                  [class.status-pill--inactive]="!location.active"
+                >
+                  {{ location.active ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+
+              <p class="location-card__description">
+                {{ location.description || 'No description available.' }}
+              </p>
+            </button>
+          }
+        }
       </div>
     </section>
 
@@ -126,116 +128,123 @@
         </div>
       </div>
 
-      <div *ngIf="!selectedLocation && !loadingOverview" class="state-box">
-        Select a storage location from the directory to view its stock overview.
-      </div>
-
-      <div *ngIf="selectedLocation && loadingOverview" class="state-box">
-        Loading stock overview...
-      </div>
-
-      <div
-        *ngIf="selectedLocation && selectedOverview && !loadingOverview"
-        class="overview-content"
-      >
-        <div class="overview-kpis">
-          <article class="kpi-card">
-            <span class="kpi-card__label">Products</span>
-            <span class="kpi-card__value">{{ selectedOverview.totalProducts }}</span>
-          </article>
-
-          <article class="kpi-card">
-            <span class="kpi-card__label">Total quantity</span>
-            <span class="kpi-card__value">{{ selectedOverview.totalQuantity }}</span>
-          </article>
-
-          <article class="kpi-card">
-            <span class="kpi-card__label">Low stock items</span>
-            <span class="kpi-card__value">
-              {{ selectedOverview.lowStockProductCount }}
-            </span>
-          </article>
-
-          <article class="kpi-card">
-            <span class="kpi-card__label">Status</span>
-            <span class="kpi-card__value">
-              {{ selectedOverview.active ? 'Active' : 'Inactive' }}
-            </span>
-          </article>
+      @if (!selectedLocation && !loadingOverview) {
+        <div class="state-box">
+          Select a storage location from the directory to view its stock overview.
         </div>
+      }
 
-        <div class="overview-meta">
-          <div class="meta-block">
-            <span class="meta-block__label">Location code</span>
-            <span class="meta-block__value">{{ selectedOverview.code }}</span>
-          </div>
-
-          <div class="meta-block">
-            <span class="meta-block__label">Zone</span>
-            <span class="meta-block__value">{{ selectedOverview.zone }}</span>
-          </div>
-
-          <div class="meta-block meta-block--full">
-            <span class="meta-block__label">Description</span>
-            <span class="meta-block__value">
-              {{ selectedOverview.description || 'No description available.' }}
-            </span>
-          </div>
+      @if (selectedLocation && loadingOverview) {
+        <div class="state-box">
+          Loading stock overview...
         </div>
+      }
 
-        <div class="table-panel">
-          <div class="table-panel__header">
-            <div>
-              <h3 class="table-panel__title">Assigned products</h3>
-              <p class="table-panel__subtitle">
-                {{ selectedOverview.products.length }} product(s) assigned to this
-                location.
-              </p>
+      @if (selectedLocation && selectedOverview && !loadingOverview) {
+        <div class="overview-content">
+          <div class="overview-kpis">
+            <article class="kpi-card">
+              <span class="kpi-card__label">Products</span>
+              <span class="kpi-card__value">{{ selectedOverview.totalProducts }}</span>
+            </article>
+
+            <article class="kpi-card">
+              <span class="kpi-card__label">Total quantity</span>
+              <span class="kpi-card__value">{{ selectedOverview.totalQuantity }}</span>
+            </article>
+
+            <article class="kpi-card">
+              <span class="kpi-card__label">Low stock items</span>
+              <span class="kpi-card__value">
+                {{ selectedOverview.lowStockProductCount }}
+              </span>
+            </article>
+
+            <article class="kpi-card">
+              <span class="kpi-card__label">Status</span>
+              <span class="kpi-card__value">
+                {{ selectedOverview.active ? 'Active' : 'Inactive' }}
+              </span>
+            </article>
+          </div>
+
+          <div class="overview-meta">
+            <div class="meta-block">
+              <span class="meta-block__label">Location code</span>
+              <span class="meta-block__value">{{ selectedOverview.code }}</span>
+            </div>
+
+            <div class="meta-block">
+              <span class="meta-block__label">Zone</span>
+              <span class="meta-block__value">{{ selectedOverview.zone }}</span>
+            </div>
+
+            <div class="meta-block meta-block--full">
+              <span class="meta-block__label">Description</span>
+              <span class="meta-block__value">
+                {{ selectedOverview.description || 'No description available.' }}
+              </span>
             </div>
           </div>
 
-          <div *ngIf="selectedOverview.products.length === 0" class="state-box">
-            No products are currently assigned to this storage location.
-          </div>
+          <div class="table-panel">
+            <div class="table-panel__header">
+              <div>
+                <h3 class="table-panel__title">Assigned products</h3>
+                <p class="table-panel__subtitle">
+                  {{ selectedOverview.products.length }} product(s) assigned to this
+                  location.
+                </p>
+              </div>
+            </div>
 
-          <div *ngIf="selectedOverview.products.length > 0" class="table-wrapper">
-            <table class="data-table">
-              <thead>
-              <tr>
-                <th>ID</th>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Unit</th>
-                <th>Quantity</th>
-                <th>Minimum</th>
-                <th>Status</th>
-                <th>Low stock</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr *ngFor="let product of selectedOverview.products">
-                <td>{{ product.id }}</td>
-                <td>{{ product.sku }}</td>
-                <td>{{ product.name }}</td>
-                <td>{{ product.unit }}</td>
-                <td>{{ product.quantity }}</td>
-                <td>{{ product.minimumQuantity }}</td>
-                <td>{{ product.status }}</td>
-                <td>
-                    <span
-                      class="status-pill"
-                      [class.status-pill--warning]="product.lowStock"
-                      [class.status-pill--active]="!product.lowStock"
-                    >
-                      {{ product.lowStock ? 'Yes' : 'No' }}
-                    </span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
+            @if (selectedOverview.products.length === 0) {
+              <div class="state-box">
+                No products are currently assigned to this storage location.
+              </div>
+            } @else {
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Unit</th>
+                    <th>Quantity</th>
+                    <th>Minimum</th>
+                    <th>Status</th>
+                    <th>Low stock</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    @for (product of selectedOverview.products; track product.id) {
+                      <tr>
+                        <td>{{ product.id }}</td>
+                        <td>{{ product.sku }}</td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.unit }}</td>
+                        <td>{{ product.quantity }}</td>
+                        <td>{{ product.minimumQuantity }}</td>
+                        <td>{{ product.status }}</td>
+                        <td>
+                          <span
+                            class="status-pill"
+                            [class.status-pill--warning]="product.lowStock"
+                            [class.status-pill--active]="!product.lowStock"
+                          >
+                            {{ product.lowStock ? 'Yes' : 'No' }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           </div>
         </div>
-      </div>
+      }
     </section>
   </div>
 </section>

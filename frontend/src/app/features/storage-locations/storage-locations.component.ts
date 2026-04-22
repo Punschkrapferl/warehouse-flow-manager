@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { StorageLocationsApiService } from '../../core/api/storage-locations-api.service';
@@ -10,7 +9,7 @@ import {
 @Component({
   selector: 'app-storage-locations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './storage-locations.component.html',
   styleUrls: ['./storage-locations.component.scss'],
 })
@@ -97,10 +96,6 @@ export class StorageLocationsComponent implements OnInit {
 
   protected get inactiveCount(): number {
     return this.locations.filter((location) => !location.active).length;
-  }
-
-  protected trackByLocationId(_: number, location: StorageLocationResponse): number {
-    return location.id;
   }
 
   private loadOverview(locationId: number): void {

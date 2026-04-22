@@ -61,10 +61,6 @@ export class DashboardComponent implements OnInit {
       .length;
   }
 
-  protected get highCount(): number {
-    return this.replenishmentCandidates.filter((candidate) => candidate.priority === 'HIGH').length;
-  }
-
   protected priorityClass(priority: string): string {
     switch (priority) {
       case 'CRITICAL':
