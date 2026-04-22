@@ -1,12 +1,30 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+interface NavigationItem {
+  label: string;
+  route: string;
+  caption: string;
+}
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  standalone: true,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
 })
-export class App {
-  protected readonly title = signal('warehouse-flow-manager-ui');
+export class AppComponent {
+  protected readonly navigationItems: NavigationItem[] = [
+    {
+      label: 'Dashboard',
+      route: '/dashboard',
+      caption: 'Operations board and stock risk',
+    },
+    {
+      label: 'Products',
+      route: '/products',
+      caption: 'Stock ledger and item visibility',
+    },
+  ];
 }

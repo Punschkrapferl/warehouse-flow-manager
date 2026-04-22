@@ -1,0 +1,246 @@
+<div class="page dashboard-console">
+  <div class="page__header">
+    <div>
+      <div class="page__eyebrow">Operations board</div>
+      <h2 class="page__title">Warehouse status overview</h2>
+      <p class="page__subtitle">
+        Track system heartbeat, stock risk, replenishment urgency, and recent warehouse activity from one screen.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button class="button button--secondary" type="button" (click)="loadDashboard()">
+        Refresh board
+      </button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="state-message">
+      Loading warehouse console data...
+    </div>
+  }
+
+  @if (!loading && errorMessage) {
+    <div class="state-message state-message--error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  @if (!loading && !errorMessage) {
+    <div class="console-kpis">
+      <article class="card console-kpi">
+        <div class="console-kpi__label">API heartbeat</div>
+        <div class="console-kpi__value">{{ health?.status ?? 'UNKNOWN' }}</div>
+        <div class="console-kpi__meta">
+          <span [class]="(health?.status ?? '') === 'UP' ? 'badge badge--success' : 'badge badge--danger'">
+            {{ health?.service ?? 'warehouse-flow-manager' }}
+          </span>
+          <span class="console-kpi__meta-text">{{ health?.timestamp | date:'medium' }}</span>
+        </div>
+      </article>
+
+      <article class="card console-kpi">
+        <div class="console-kpi__label">Low-stock alerts</div>
+        <div class="console-kpi__value">{{ lowStockProducts.length }}</div>
+        <div class="console-kpi__meta-text">Items currently at or below minimum quantity</div>
+      </article>
+
+      <article class="card console-kpi">
+        <div class="console-kpi__label">Critical shortages</div>
+        <div class="console-kpi__value">{{ criticalCount }}</div>
+        <div class="console-kpi__meta-text">Replenishment candidates already at zero stock</div>
+      </article>
+
+      <article class="card console-kpi">
+        <div class="console-kpi__label">Recent movement events</div>
+        <div class="console-kpi__value">{{ recentMovements.length }}</div>
+        <div class="console-kpi__meta-text">Latest inbound, outbound, and adjustment records</div>
+      </article>
+    </div>
+
+    <div class="dashboard-layout">
+      <section class="card ops-panel ops-panel--wide">
+        <div class="card__header ops-panel__header">
+          <div>
+            <h3 class="card__title">Low-stock watchlist</h3>
+            <p class="card__subtitle">Items requiring immediate attention from operations.</p>
+          </div>
+
+          <div class="panel-hint">Active stock risk</div>
+        </div>
+
+        <div class="card__body">
+          @if (lowStockProducts.length === 0) {
+            <div class="table-empty">
+              No low-stock products right now.
+            </div>
+          }
+
+          @if (lowStockProducts.length > 0) {
+            <div class="table-shell">
+              <table class="data-table data-table--dense">
+                <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Item</th>
+                  <th>On hand</th>
+                  <th>Minimum</th>
+                  <th>Location</th>
+                </tr>
+                </thead>
+                <tbody>
+                  @for (product of lowStockProducts; track product.id) {
+                    <tr>
+                      <td class="mono cell--strong">{{ product.sku }}</td>
+                      <td>
+                        <div class="entity-name">{{ product.name }}</div>
+                        <div class="entity-meta">{{ product.unit }} · ID {{ product.id }}</div>
+                      </td>
+                      <td>
+                        <span
+                          [class]="product.quantity === 0 ? 'metric-pill metric-pill--critical' : 'metric-pill metric-pill--warning'"
+                        >
+                          {{ product.quantity }}
+                        </span>
+                      </td>
+                      <td>{{ product.minimumQuantity }}</td>
+                      <td>{{ product.storageLocationCode ?? 'Unassigned' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="card ops-panel">
+        <div class="card__header ops-panel__header">
+          <div>
+            <h3 class="card__title">Replenishment queue</h3>
+            <p class="card__subtitle">Calculated from shortage and recent outbound demand.</p>
+          </div>
+
+          <div class="panel-hint">Top 6 items</div>
+        </div>
+
+        <div class="card__body">
+          @if (replenishmentCandidates.length === 0) {
+            <div class="table-empty">
+              No replenishment candidates found.
+            </div>
+          }
+
+          @if (replenishmentCandidates.length > 0) {
+            <div class="replenishment-queue">
+              @for (candidate of replenishmentCandidates.slice(0, 6); track candidate.productId) {
+                <article class="queue-item">
+                  <div class="queue-item__top">
+                    <div>
+                      <div class="queue-item__name">{{ candidate.name }}</div>
+                      <div class="queue-item__meta">
+                        <span class="mono">{{ candidate.sku }}</span>
+                        · {{ candidate.storageLocationCode ?? 'Unassigned' }}
+                      </div>
+                    </div>
+
+                    <span [class]="priorityClass(candidate.priority)">
+                      {{ candidate.priority }}
+                    </span>
+                  </div>
+
+                  <div class="queue-item__stats">
+                    <div class="queue-stat">
+                      <div class="queue-stat__label">Current</div>
+                      <div class="queue-stat__value">{{ candidate.currentQuantity }}</div>
+                    </div>
+
+                    <div class="queue-stat">
+                      <div class="queue-stat__label">Minimum</div>
+                      <div class="queue-stat__value">{{ candidate.minimumQuantity }}</div>
+                    </div>
+
+                    <div class="queue-stat">
+                      <div class="queue-stat__label">Reorder</div>
+                      <div class="queue-stat__value">{{ candidate.recommendedReorderQuantity }}</div>
+                    </div>
+
+                    <div class="queue-stat">
+                      <div class="queue-stat__label">Recent outbound</div>
+                      <div class="queue-stat__value">{{ candidate.recentOutboundQuantity }}</div>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <section class="card ops-panel">
+      <div class="card__header ops-panel__header">
+        <div>
+          <h3 class="card__title">Recent stock movement stream</h3>
+          <p class="card__subtitle">Latest inbound, outbound, and adjustment events from the backend.</p>
+        </div>
+
+        <div class="panel-hint">Operational activity</div>
+      </div>
+
+      <div class="card__body">
+        @if (recentMovements.length === 0) {
+          <div class="table-empty">
+            No stock movements available yet.
+          </div>
+        }
+
+        @if (recentMovements.length > 0) {
+          <div class="table-shell">
+            <table class="data-table data-table--dense">
+              <thead>
+              <tr>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Resulting</th>
+                <th>Timestamp</th>
+                <th>Note</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (movement of recentMovements; track movement.id) {
+                  <tr>
+                    <td class="mono cell--strong">{{ movement.productSku }}</td>
+                    <td>
+                      <span [class]="movementClass(movement.movementType)">
+                        {{ movement.movementType }}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        [class]="
+                          movement.movementType === 'OUTBOUND'
+                            ? 'metric-pill metric-pill--critical'
+                            : movement.movementType === 'INBOUND'
+                              ? 'metric-pill metric-pill--success'
+                              : 'metric-pill metric-pill--neutral'
+                        "
+                      >
+                        {{ movement.quantity }}
+                      </span>
+                    </td>
+                    <td>{{ movement.resultingQuantity }}</td>
+                    <td>{{ movement.movementAt | date:'medium' }}</td>
+                    <td class="cell-note">{{ movement.note || 'No note' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

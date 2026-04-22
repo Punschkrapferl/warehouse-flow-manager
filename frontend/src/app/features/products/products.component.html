@@ -1,0 +1,228 @@
+<div class="page products-console">
+  <div class="page__header">
+    <div>
+      <div class="page__eyebrow">Stock ledger</div>
+      <h2 class="page__title">Inventory visibility</h2>
+      <p class="page__subtitle">
+        Search, filter, and inspect item quantities, stock gaps, status, and assigned warehouse locations.
+      </p>
+    </div>
+
+    <div class="page__actions">
+      <button class="button button--secondary" type="button" (click)="loadProducts()">
+        Refresh data
+      </button>
+    </div>
+  </div>
+
+  <section class="card ops-panel">
+    <div class="card__header">
+      <h3 class="card__title">Filter console</h3>
+      <p class="card__subtitle">Keep the frontend aligned with backend pagination, filtering, and sorting semantics.</p>
+    </div>
+
+    <div class="card__body">
+      <div class="form-grid products-filters">
+        <div class="form-field products-filters__search">
+          <label for="search">Search</label>
+          <input
+            id="search"
+            type="text"
+            placeholder="Search by SKU or name"
+            [(ngModel)]="filters.search"
+            (keyup.enter)="applyFilters()"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="status">Status</label>
+          <select id="status" [(ngModel)]="filters.status">
+            @for (status of statuses; track status) {
+              <option [ngValue]="status">{{ status }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="page-size">Page size</label>
+          <select
+            id="page-size"
+            [ngModel]="filters.size"
+            (ngModelChange)="pageSizeChanged($event)"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="sort-by">Sort by</label>
+          <select id="sort-by" [(ngModel)]="filters.sortBy" (ngModelChange)="applyFilters()">
+            <option value="id">ID</option>
+            <option value="sku">SKU</option>
+            <option value="name">Name</option>
+            <option value="quantity">Quantity</option>
+            <option value="minimumQuantity">Minimum quantity</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="direction">Direction</label>
+          <select id="direction" [(ngModel)]="filters.direction" (ngModelChange)="applyFilters()">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+
+        <div class="products-filters__buttons">
+          <button class="button button--primary" type="button" (click)="applyFilters()">
+            Apply filters
+          </button>
+
+          <button class="button button--secondary" type="button" (click)="resetFilters()">
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card ops-panel">
+    <div class="card__header">
+      <h3 class="card__title">Inventory table</h3>
+      <p class="card__subtitle">
+        {{ pageData.totalElements }} total product(s) returned by the backend.
+      </p>
+    </div>
+
+    <div class="card__body">
+      @if (loading) {
+        <div class="state-message">
+          Loading products...
+        </div>
+      }
+
+      @if (!loading && errorMessage) {
+        <div class="state-message state-message--error">
+          {{ errorMessage }}
+        </div>
+      }
+
+      @if (!loading && !errorMessage && pageData.content.length === 0) {
+        <div class="table-empty">
+          No products found for the selected filters.
+        </div>
+      }
+
+      @if (!loading && !errorMessage && pageData.content.length > 0) {
+        <div class="table-toolbar">
+          <div class="table-toolbar__group">
+            <span class="table-toolbar__label">Results</span>
+            <strong>{{ pageData.totalElements }}</strong>
+          </div>
+
+          <div class="table-toolbar__group">
+            <span class="table-toolbar__label">Page</span>
+            <strong>{{ pageData.page + 1 }} / {{ pageData.totalPages || 1 }}</strong>
+          </div>
+
+          <div class="table-toolbar__group">
+            <span class="table-toolbar__label">Rows shown</span>
+            <strong>{{ pageData.content.length }}</strong>
+          </div>
+        </div>
+
+        <div class="table-shell">
+          <table class="data-table data-table--dense">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>SKU</th>
+              <th>Item</th>
+              <th>Status</th>
+              <th>On hand</th>
+              <th>Minimum</th>
+              <th>Gap</th>
+              <th>Unit</th>
+              <th>Location</th>
+              <th>Low stock</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (product of pageData.content; track product.id) {
+                <tr>
+                  <td>
+                    <span class="id-chip">#{{ product.id }}</span>
+                  </td>
+                  <td class="mono sku-cell">{{ product.sku }}</td>
+                  <td>
+                    <div class="product-name">{{ product.name }}</div>
+                    <div class="product-description">{{ product.description || 'No description' }}</div>
+                  </td>
+                  <td>
+                    <span [class]="statusClass(product.status)">
+                      {{ product.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      [class]="product.lowStock ? 'metric-pill metric-pill--critical' : 'metric-pill metric-pill--success'"
+                    >
+                      {{ product.quantity }}
+                    </span>
+                  </td>
+                  <td>{{ product.minimumQuantity }}</td>
+                  <td>
+                    <span
+                      [class]="
+                        product.quantity < product.minimumQuantity
+                          ? 'metric-pill metric-pill--warning'
+                          : 'metric-pill metric-pill--neutral'
+                      "
+                    >
+                      {{ product.quantity < product.minimumQuantity ? product.minimumQuantity - product.quantity : 0 }}
+                    </span>
+                  </td>
+                  <td>{{ product.unit }}</td>
+                  <td class="location-cell">{{ product.storageLocationCode ?? 'Unassigned' }}</td>
+                  <td>
+                    <span [class]="product.lowStock ? 'badge badge--danger' : 'badge badge--success'">
+                      {{ product.lowStock ? 'Alert' : 'OK' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <div class="pagination__meta">
+            Page {{ pageData.page + 1 }} of {{ pageData.totalPages || 1 }}
+          </div>
+
+          <div class="pagination__actions">
+            <button
+              class="button button--secondary"
+              type="button"
+              (click)="previousPage()"
+              [disabled]="pageData.first"
+            >
+              Previous
+            </button>
+
+            <button
+              class="button button--secondary"
+              type="button"
+              (click)="nextPage()"
+              [disabled]="pageData.last"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+</div>
