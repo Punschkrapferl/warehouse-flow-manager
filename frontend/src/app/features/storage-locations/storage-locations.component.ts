@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { catchError, finalize, of, tap } from 'rxjs';
 import { StorageLocationsApiService } from '../../core/api/storage-locations-api.service';
 import {
   StorageLocationResponse,
@@ -15,6 +16,7 @@ import {
 })
 export class StorageLocationsComponent implements OnInit {
   private readonly storageLocationsApi = inject(StorageLocationsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected loadingLocations = false;
   protected loadingOverview = false;
@@ -31,6 +33,7 @@ export class StorageLocationsComponent implements OnInit {
     this.loadLocations();
   }
 
+  /*
   protected loadLocations(): void {
     this.loadingLocations = true;
     this.errorMessage = '';
@@ -55,7 +58,37 @@ export class StorageLocationsComponent implements OnInit {
       },
     });
   }
+   */
+  protected loadLocations(): void {
+    this.loadingLocations = true;
+    this.errorMessage = '';
 
+    this.storageLocationsApi
+      .getStorageLocations()
+      .pipe(
+        tap((locations) => {
+          this.locations = locations;
+          this.applySearch();
+
+          if (
+            this.selectedLocation &&
+            !locations.some((location) => location.id === this.selectedLocation?.id)
+          ) {
+            this.selectedLocation = null;
+            this.selectedOverview = null;
+          }
+        }),
+        catchError((error) => {
+          this.errorMessage = error?.message || 'Could not load storage locations.';
+          return of([]);
+        }),
+        finalize(() => {
+          this.loadingLocations = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe();
+  }
   protected selectLocation(location: StorageLocationResponse): void {
     this.selectedLocation = location;
     this.loadOverview(location.id);
@@ -102,15 +135,31 @@ export class StorageLocationsComponent implements OnInit {
     this.loadingOverview = true;
     this.errorMessage = '';
 
-    this.storageLocationsApi.getStorageLocationStockOverview(locationId).subscribe({
-      next: (overview) => {
-        this.selectedOverview = overview;
-        this.loadingOverview = false;
-      },
-      error: (error) => {
-        this.errorMessage = error?.message || 'Could not load storage location overview.';
-        this.loadingOverview = false;
-      },
-    });
+    this.storageLocationsApi
+      .getStorageLocationStockOverview(locationId)
+      .pipe(
+        tap((overview) => {
+          //subscribe({
+          // next: (overview) => {
+          this.selectedOverview = overview;
+          this.loadingOverview = false;
+        }),
+        /*error: (error) => {
+            this.errorMessage = error?.message || 'Could not load storage location overview.';
+            this.loadingOverview = false;
+          },
+           */
+        catchError((error) => {
+          this.errorMessage = error?.message || 'Could not load storage locations.';
+          return of([]);
+        }),
+        finalize(() => {
+          this.loadingOverview = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe();
+    //});
+    //}
   }
 }

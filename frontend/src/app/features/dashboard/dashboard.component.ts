@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { forkJoin, catchError, finalize, of, tap } from 'rxjs';
 import { DashboardApiService } from '../../core/api/dashboard-api.service';
 import {
   HealthResponse,
@@ -19,6 +19,7 @@ import {
 })
 export class DashboardComponent implements OnInit {
   private readonly dashboardApi = inject(DashboardApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected loading = true;
   protected errorMessage = '';
@@ -31,7 +32,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
   }
-
+/*
   protected loadDashboard(): void {
     this.loading = true;
     this.errorMessage = '';
@@ -54,6 +55,35 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+  */
+  protected loadDashboard(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      health: this.dashboardApi.getHealth(),
+      lowStockProducts: this.dashboardApi.getLowStockProducts(),
+      replenishmentCandidates: this.dashboardApi.getReplenishmentCandidates(30),
+      recentMovements: this.dashboardApi.getRecentStockMovements(8),
+    }).pipe(
+      tap((result) => {
+        this.health = result.health;
+        this.lowStockProducts = result.lowStockProducts;
+        this.replenishmentCandidates = result.replenishmentCandidates;
+        this.recentMovements = result.recentMovements;
+        this.loading = false;
+      }),
+      catchError((error) => {
+        this.errorMessage = this.buildErrorMessage(error);
+        return of([]);
+      }),
+      finalize(() => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      }),
+      )
+      .subscribe();
   }
 
   protected get criticalCount(): number {

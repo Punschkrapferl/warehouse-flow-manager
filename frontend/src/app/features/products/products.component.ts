@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { catchError, finalize, of, tap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ProductResponse, ProductStatus, PagedResponse } from '../../core/api/api.types';
 import { ProductQuery, ProductsApiService } from '../../core/api/products-api.service';
@@ -15,6 +16,7 @@ type ProductStatusFilter = ProductStatus | 'ALL';
 })
 export class ProductsComponent implements OnInit {
   private readonly productsApi = inject(ProductsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly statuses: ProductStatusFilter[] = ['ALL', 'ACTIVE', 'BLOCKED', 'DISCONTINUED'];
 
@@ -64,16 +66,20 @@ export class ProductsComponent implements OnInit {
       status: this.filters.status === 'ALL' ? undefined : this.filters.status,
     };
 
-    this.productsApi.getProducts(query).subscribe({
-      next: (pageData) => {
+    this.productsApi.getProducts(query).pipe(
+      tap((pageData) => {
         this.pageData = pageData;
         this.loading = false;
-      },
-      error: (error: unknown) => {
+      }),
+      catchError((error) => {
         this.errorMessage = this.buildErrorMessage(error);
+        return of([]);
+      }),
+      finalize(() => {
         this.loading = false;
-      },
-    });
+        this.cdr.detectChanges();
+      }),
+    ).subscribe();
   }
 
   protected applyFilters(): void {

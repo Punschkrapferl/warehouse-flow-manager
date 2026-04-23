@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { catchError, finalize, of, tap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { StockMovementsApiService } from '../../core/api/stock-movements-api.service';
 import {
@@ -19,6 +20,7 @@ type MovementTypeFilter = 'ALL' | StockMovementType;
 })
 export class StockMovementsComponent implements OnInit {
   private readonly stockMovementsApi = inject(StockMovementsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected loadingMovements = false;
   protected loadingSummary = false;
@@ -79,17 +81,21 @@ export class StockMovementsComponent implements OnInit {
         from,
         to,
       })
-      .subscribe({
-        next: (movements) => {
+      .pipe(
+        tap((movements) => {
           this.movements = movements;
           this.loadingMovements = false;
-        },
-        error: (error) => {
+        }),
+        catchError((error) => {
+          this.errorMessage = error?.message || 'Could not load stock movements.';
+          return of([]);
+        }),
+        finalize(() => {
           this.movements = [];
           this.loadingMovements = false;
-          this.errorMessage = error?.message || 'Could not load stock movements.';
-        },
-      });
+          this.cdr.detectChanges();
+        }),
+        ).subscribe();
 
     this.stockMovementsApi
       .getStockMovementSummary({
@@ -97,16 +103,21 @@ export class StockMovementsComponent implements OnInit {
         from,
         to,
       })
-      .subscribe({
-        next: (summary) => {
+      .pipe(
+        tap((summary) => {
           this.summary = summary;
           this.loadingSummary = false;
-        },
-        error: () => {
+        }),
+        catchError((error) => {
+          this.errorMessage = error?.message || 'Could not load stock movement summary.';
+          return of([]);
+        }),
+        finalize(() => {
           this.summary = null;
           this.loadingSummary = false;
-        },
-      });
+          this.cdr.detectChanges();
+        }),
+        ).subscribe();
   }
 
   private parseProductId(value: string): number | undefined {
