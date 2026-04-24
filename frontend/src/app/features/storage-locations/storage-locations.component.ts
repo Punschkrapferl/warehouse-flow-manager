@@ -33,32 +33,6 @@ export class StorageLocationsComponent implements OnInit {
     this.loadLocations();
   }
 
-  /*
-  protected loadLocations(): void {
-    this.loadingLocations = true;
-    this.errorMessage = '';
-
-    this.storageLocationsApi.getStorageLocations().subscribe({
-      next: (locations) => {
-        this.locations = locations;
-        this.applySearch();
-        this.loadingLocations = false;
-
-        if (
-          this.selectedLocation &&
-          !this.locations.some((location) => location.id === this.selectedLocation?.id)
-        ) {
-          this.selectedLocation = null;
-          this.selectedOverview = null;
-        }
-      },
-      error: (error) => {
-        this.errorMessage = error?.message || 'Could not load storage locations.';
-        this.loadingLocations = false;
-      },
-    });
-  }
-   */
   protected loadLocations(): void {
     this.loadingLocations = true;
     this.errorMessage = '';
@@ -139,16 +113,9 @@ export class StorageLocationsComponent implements OnInit {
       .getStorageLocationStockOverview(locationId)
       .pipe(
         tap((overview) => {
-          //subscribe({
-          // next: (overview) => {
           this.selectedOverview = overview;
           this.loadingOverview = false;
         }),
-        /*error: (error) => {
-            this.errorMessage = error?.message || 'Could not load storage location overview.';
-            this.loadingOverview = false;
-          },
-           */
         catchError((error) => {
           this.errorMessage = error?.message || 'Could not load storage locations.';
           return of([]);
@@ -159,7 +126,5 @@ export class StorageLocationsComponent implements OnInit {
         }),
       )
       .subscribe();
-    //});
-    //}
   }
 }

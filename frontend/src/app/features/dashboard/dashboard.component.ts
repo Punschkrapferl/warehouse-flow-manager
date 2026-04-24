@@ -32,31 +32,6 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboard();
   }
-/*
-  protected loadDashboard(): void {
-    this.loading = true;
-    this.errorMessage = '';
-
-    forkJoin({
-      health: this.dashboardApi.getHealth(),
-      lowStockProducts: this.dashboardApi.getLowStockProducts(),
-      replenishmentCandidates: this.dashboardApi.getReplenishmentCandidates(30),
-      recentMovements: this.dashboardApi.getRecentStockMovements(8),
-    }).subscribe({
-      next: (result) => {
-        this.health = result.health;
-        this.lowStockProducts = result.lowStockProducts;
-        this.replenishmentCandidates = result.replenishmentCandidates;
-        this.recentMovements = result.recentMovements;
-        this.loading = false;
-      },
-      error: (error: unknown) => {
-        this.errorMessage = this.buildErrorMessage(error);
-        this.loading = false;
-      },
-    });
-  }
-  */
   protected loadDashboard(): void {
     this.loading = true;
     this.errorMessage = '';

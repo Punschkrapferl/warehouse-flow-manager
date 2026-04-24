@@ -84,14 +84,12 @@ export class StockMovementsComponent implements OnInit {
       .pipe(
         tap((movements) => {
           this.movements = movements;
-          this.loadingMovements = false;
         }),
         catchError((error) => {
           this.errorMessage = error?.message || 'Could not load stock movements.';
           return of([]);
         }),
         finalize(() => {
-          this.movements = [];
           this.loadingMovements = false;
           this.cdr.detectChanges();
         }),
