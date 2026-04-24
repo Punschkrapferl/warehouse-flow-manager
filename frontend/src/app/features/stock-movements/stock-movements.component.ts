@@ -59,10 +59,6 @@ export class StockMovementsComponent implements OnInit {
     this.loadData();
   }
 
-  protected trackByMovementId(_: number, movement: StockMovementResponse): number {
-    return movement.id;
-  }
-
   private loadData(): void {
     this.loadingMovements = true;
     this.loadingSummary = true;
@@ -111,7 +107,6 @@ export class StockMovementsComponent implements OnInit {
           return of([]);
         }),
         finalize(() => {
-          this.summary = null;
           this.loadingSummary = false;
           this.cdr.detectChanges();
         }),

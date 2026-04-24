@@ -115,22 +115,6 @@
         </span>
       </div>
     </div>
-
-    <div class="summary-hero__side">
-      <article class="summary-hero__metric">
-        <span class="summary-hero__metric-label">From</span>
-        <span class="summary-hero__metric-value">
-          {{ summary?.from ? (summary?.from | date:'dd.MM.yyyy HH:mm') : 'Not set' }}
-        </span>
-      </article>
-
-      <article class="summary-hero__metric">
-        <span class="summary-hero__metric-label">To</span>
-        <span class="summary-hero__metric-value">
-          {{ summary?.to ? (summary?.to | date:'dd.MM.yyyy HH:mm') : 'Not set' }}
-        </span>
-      </article>
-    </div>
   </section>
 
   <section class="movement-kpis">
@@ -217,8 +201,32 @@
                 </td>
                 <td>{{ movement.productId }}</td>
                 <td class="movement-sku">{{ movement.productSku }}</td>
-                <td>{{ movement.movementType }}</td>
-                <td>{{ movement.quantity }}</td>
+                <td>
+                  <span [class]="
+                          movement.movementType === 'OUTBOUND'
+                            ? 'badge badge--warning'
+                            : movement.movementType === 'INBOUND'
+                              ? 'badge badge--success'
+                              : 'badge badge--neutral'
+                        "
+                  >
+                   {{ movement.movementType }}
+                  </span>
+
+                </td>
+                <td>
+                  <span
+                  [class]="
+                          movement.movementType === 'OUTBOUND'
+                            ? 'metric-pill metric-pill--critical'
+                            : movement.movementType === 'INBOUND'
+                              ? 'metric-pill metric-pill--success'
+                              : 'metric-pill metric-pill--neutral'
+                        "
+                  >
+                    {{ movement.quantity }}
+                  </span>
+                </td>
                 <td>{{ movement.resultingQuantity }}</td>
                 <td class="movement-note">
                   {{ movement.note || '—' }}
