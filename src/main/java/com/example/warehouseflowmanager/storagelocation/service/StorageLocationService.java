@@ -16,27 +16,30 @@ import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StorageLocationService {
 
     private final StorageLocationRepository storageLocationRepository;
     private final ProductRepository productRepository;
 
+    @Transactional
     public StorageLocationResponse createStorageLocation(CreateStorageLocationRequest request) {
-        if (storageLocationRepository.existsByCode(request.getCode())) {
+        String code = request.getCode().trim();
+
+        if (storageLocationRepository.existsByCode(code)) {
             throw new ResourceConflictException(
-                    "Storage location with code '" + request.getCode() + "' already exists"
+                    "Storage location with code '" + code + "' already exists"
             );
         }
 
         StorageLocation storageLocation = new StorageLocation();
-        storageLocation.setCode(request.getCode());
-        storageLocation.setZone(request.getZone());
-        storageLocation.setDescription(request.getDescription());
-
-        // Default new locations to active unless explicitly stated otherwise.
+        storageLocation.setCode(code);
+        storageLocation.setZone(request.getZone().trim());
+        storageLocation.setDescription(normalizeDescription(request.getDescription()));
         storageLocation.setActive(request.getActive() != null ? request.getActive() : true);
 
         StorageLocation savedStorageLocation = storageLocationRepository.save(storageLocation);
@@ -58,8 +61,6 @@ public class StorageLocationService {
     public StorageLocationStockOverviewResponse getStorageLocationStockOverview(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
 
-        // Load all products currently assigned to this location so the API can provide
-        // both aggregated totals and item-level visibility.
         List<Product> products = productRepository.findAllByStorageLocationIdWithStorageLocation(id);
 
         List<StorageLocationStockItemResponse> productItems = products.stream()
@@ -89,24 +90,30 @@ public class StorageLocationService {
         );
     }
 
+    @Transactional
     public StorageLocationResponse updateStorageLocation(Long id, UpdateStorageLocationRequest request) {
         StorageLocation storageLocation = findStorageLocationById(id);
 
-        if (request.getCode() != null && !request.getCode().equals(storageLocation.getCode())) {
-            if (storageLocationRepository.existsByCode(request.getCode())) {
-                throw new ResourceConflictException(
-                        "Storage location with code '" + request.getCode() + "' already exists"
-                );
+        if (request.getCode() != null) {
+            String code = request.getCode().trim();
+
+            if (!code.equals(storageLocation.getCode())) {
+                if (storageLocationRepository.existsByCode(code)) {
+                    throw new ResourceConflictException(
+                            "Storage location with code '" + code + "' already exists"
+                    );
+                }
+
+                storageLocation.setCode(code);
             }
-            storageLocation.setCode(request.getCode());
         }
 
         if (request.getZone() != null) {
-            storageLocation.setZone(request.getZone());
+            storageLocation.setZone(request.getZone().trim());
         }
 
         if (request.getDescription() != null) {
-            storageLocation.setDescription(request.getDescription());
+            storageLocation.setDescription(normalizeDescription(request.getDescription()));
         }
 
         if (request.getActive() != null) {
@@ -117,11 +124,10 @@ public class StorageLocationService {
         return mapToResponse(updatedStorageLocation);
     }
 
+    @Transactional
     public void deleteStorageLocation(Long id) {
         StorageLocation storageLocation = findStorageLocationById(id);
 
-        // Prevent deletion while products still reference this location to avoid orphaned assignments
-        // and to keep location-based inventory data consistent.
         if (productRepository.existsByStorageLocationId(id)) {
             throw new ResourceConflictException(
                     "Storage location '" + storageLocation.getCode()
@@ -168,8 +174,14 @@ public class StorageLocationService {
         int quantity = product.getQuantity() != null ? product.getQuantity() : 0;
         int minimumQuantity = product.getMinimumQuantity() != null ? product.getMinimumQuantity() : 0;
 
-        // Keep low-stock semantics aligned with ProductService / ProductResponse:
-        // only ACTIVE products are considered low stock.
         return product.getStatus() == ProductStatus.ACTIVE && quantity <= minimumQuantity;
+    }
+
+    private String normalizeDescription(String description) {
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+
+        return description.trim();
     }
 }
