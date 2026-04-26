@@ -9,52 +9,52 @@
     </div>
 
     <div class="page__actions">
-      <button class="button button--secondary" type="button" (click)="loadDashboard()">
+      <button class="button button--secondary" type="button" (click)="facade.loadDashboard()">
         Refresh board
       </button>
     </div>
   </div>
 
-  @if (loading) {
+  @if (facade.loading) {
     <div class="state-message">
       Loading warehouse console data...
     </div>
   }
 
-  @if (!loading && errorMessage) {
+  @if (!facade.loading && facade.errorMessage) {
     <div class="state-message state-message--error">
-      {{ errorMessage }}
+      {{ facade.errorMessage }}
     </div>
   }
 
-  @if (!loading && !errorMessage) {
+  @if (!facade.loading && !facade.errorMessage) {
     <div class="console-kpis">
       <article class="card console-kpi">
         <div class="console-kpi__label">API heartbeat</div>
-        <div class="console-kpi__value">{{ health?.status ?? 'UNKNOWN' }}</div>
+        <div class="console-kpi__value">{{ facade.health?.status ?? 'UNKNOWN' }}</div>
         <div class="console-kpi__meta">
-          <span [class]="(health?.status ?? '') === 'UP' ? 'badge badge--success' : 'badge badge--danger'">
-            {{ health?.service ?? 'warehouse-flow-manager' }}
+          <span [class]="(facade.health?.status ?? '') === 'UP' ? 'badge badge--success' : 'badge badge--danger'">
+            {{ facade.health?.service ?? 'warehouse-flow-manager' }}
           </span>
-          <span class="console-kpi__meta-text">{{ health?.timestamp | date:'medium' }}</span>
+          <span class="console-kpi__meta-text">{{ facade.health?.timestamp | date:'medium' }}</span>
         </div>
       </article>
 
       <article class="card console-kpi">
         <div class="console-kpi__label">Low-stock alerts</div>
-        <div class="console-kpi__value">{{ lowStockProducts.length }}</div>
+        <div class="console-kpi__value">{{ facade.lowStockProducts.length }}</div>
         <div class="console-kpi__meta-text">Items currently at or below minimum quantity</div>
       </article>
 
       <article class="card console-kpi">
         <div class="console-kpi__label">Critical shortages</div>
-        <div class="console-kpi__value">{{ criticalCount }}</div>
+        <div class="console-kpi__value">{{ facade.criticalCount }}</div>
         <div class="console-kpi__meta-text">Replenishment candidates already at zero stock</div>
       </article>
 
       <article class="card console-kpi">
         <div class="console-kpi__label">Recent movement events</div>
-        <div class="console-kpi__value">{{ recentMovements.length }}</div>
+        <div class="console-kpi__value">{{ facade.recentMovements.length }}</div>
         <div class="console-kpi__meta-text">Latest inbound, outbound, and adjustment records</div>
       </article>
     </div>
@@ -71,13 +71,13 @@
         </div>
 
         <div class="card__body">
-          @if (lowStockProducts.length === 0) {
+          @if (facade.lowStockProducts.length === 0) {
             <div class="table-empty">
               No low-stock products right now.
             </div>
           }
 
-          @if (lowStockProducts.length > 0) {
+          @if (facade.lowStockProducts.length > 0) {
             <div class="table-shell">
               <table class="data-table data-table--dense">
                 <thead>
@@ -90,7 +90,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                  @for (product of lowStockProducts; track product.id) {
+                  @for (product of facade.lowStockProducts; track product.id) {
                     <tr>
                       <td class="mono cell--strong">{{ product.sku }}</td>
                       <td>
@@ -126,15 +126,15 @@
         </div>
 
         <div class="card__body">
-          @if (replenishmentCandidates.length === 0) {
+          @if (facade.replenishmentCandidates.length === 0) {
             <div class="table-empty">
               No replenishment candidates found.
             </div>
           }
 
-          @if (replenishmentCandidates.length > 0) {
+          @if (facade.replenishmentCandidates.length > 0) {
             <div class="replenishment-queue">
-              @for (candidate of replenishmentCandidates.slice(0, 6); track candidate.productId) {
+              @for (candidate of facade.replenishmentCandidates.slice(0, 6); track candidate.productId) {
                 <article class="queue-item">
                   <div class="queue-item__top">
                     <div>
@@ -190,13 +190,13 @@
       </div>
 
       <div class="card__body">
-        @if (recentMovements.length === 0) {
+        @if (facade.recentMovements.length === 0) {
           <div class="table-empty">
             No stock movements available yet.
           </div>
         }
 
-        @if (recentMovements.length > 0) {
+        @if (facade.recentMovements.length > 0) {
           <div class="table-shell">
             <table class="data-table data-table--dense">
               <thead>
@@ -210,7 +210,7 @@
               </tr>
               </thead>
               <tbody>
-                @for (movement of recentMovements; track movement.id) {
+                @for (movement of facade.recentMovements; track movement.id) {
                   <tr>
                     <td class="mono cell--strong">{{ movement.productSku }}</td>
                     <td>
@@ -219,15 +219,7 @@
                       </span>
                     </td>
                     <td>
-                      <span
-                        [class]="
-                          movement.movementType === 'OUTBOUND'
-                            ? 'metric-pill metric-pill--critical'
-                            : movement.movementType === 'INBOUND'
-                              ? 'metric-pill metric-pill--success'
-                              : 'metric-pill metric-pill--neutral'
-                        "
-                      >
+                      <span [class]="movementQuantityClass(movement.movementType)">
                         {{ movement.quantity }}
                       </span>
                     </td>
