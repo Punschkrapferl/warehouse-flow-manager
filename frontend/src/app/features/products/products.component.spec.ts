@@ -6,10 +6,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PagedResponse, ProductResponse } from '../../core/api/api.types';
 import { ProductQuery, ProductsApiService } from '../../core/api/products-api.service';
 import { ProductsComponent } from './products.component';
+import { ProductsFacade } from './products.facade';
 
 describe('ProductsComponent', () => {
   let fixture: ComponentFixture<ProductsComponent>;
   let component: ProductsComponent;
+  let facade: ProductsFacade;
   let productsApiMock: {
     getProducts: ReturnType<typeof vi.fn>;
   };
@@ -75,6 +77,7 @@ describe('ProductsComponent', () => {
 
     fixture = TestBed.createComponent(ProductsComponent);
     component = fixture.componentInstance;
+    facade = fixture.debugElement.injector.get(ProductsFacade);
   });
 
   it('should load products on init with default query', () => {
@@ -84,9 +87,9 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
 
     expectGetProductsCalledWith(defaultQuery());
-    expect(component['loading']).toBe(false);
-    expect(component['errorMessage']).toBe('');
-    expect(component['pageData']).toEqual(page);
+    expect(facade.loading).toBe(false);
+    expect(facade.errorMessage).toBe('');
+    expect(facade.pageData).toEqual(page);
   });
 
   it('should call API with current filters when applyFilters is triggered', () => {
@@ -94,7 +97,7 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['filters'] = {
+    facade.filters = {
       search: '1001',
       status: 'BLOCKED',
       page: 3,
@@ -103,7 +106,7 @@ describe('ProductsComponent', () => {
       direction: 'desc',
     };
 
-    component['applyFilters']();
+    facade.applyFilters();
 
     expectGetProductsCalledWith(
       defaultQuery({
@@ -114,7 +117,7 @@ describe('ProductsComponent', () => {
         status: 'BLOCKED',
       }),
     );
-    expect(component['filters'].page).toBe(0);
+    expect(facade.filters.page).toBe(0);
   });
 
   it('should omit status when status filter is ALL', () => {
@@ -122,7 +125,7 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['filters'] = {
+    facade.filters = {
       search: 'Packing',
       status: 'ALL',
       page: 0,
@@ -131,7 +134,7 @@ describe('ProductsComponent', () => {
       direction: 'asc',
     };
 
-    component['applyFilters']();
+    facade.applyFilters();
 
     expectGetProductsCalledWith(
       defaultQuery({
@@ -142,12 +145,62 @@ describe('ProductsComponent', () => {
     );
   });
 
+  it('should trim search values before calling the API', () => {
+    productsApiMock.getProducts.mockReturnValue(of(createPage([])));
+    fixture.detectChanges();
+    productsApiMock.getProducts.mockClear();
+
+    facade.filters = {
+      search: '  Packing  ',
+      status: 'ACTIVE',
+      page: 0,
+      size: 10,
+      sortBy: 'name',
+      direction: 'asc',
+    };
+
+    facade.applyFilters();
+
+    expectGetProductsCalledWith(
+      defaultQuery({
+        sortBy: 'name',
+        search: 'Packing',
+        status: 'ACTIVE',
+      }),
+    );
+  });
+
+  it('should omit search when search input is blank', () => {
+    productsApiMock.getProducts.mockReturnValue(of(createPage([])));
+    fixture.detectChanges();
+    productsApiMock.getProducts.mockClear();
+
+    facade.filters = {
+      search: '   ',
+      status: 'ACTIVE',
+      page: 0,
+      size: 10,
+      sortBy: 'name',
+      direction: 'asc',
+    };
+
+    facade.applyFilters();
+
+    expectGetProductsCalledWith(
+      defaultQuery({
+        sortBy: 'name',
+        search: undefined,
+        status: 'ACTIVE',
+      }),
+    );
+  });
+
   it('should reset filters to defaults and reload products', () => {
     productsApiMock.getProducts.mockReturnValue(of(createPage([])));
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['filters'] = {
+    facade.filters = {
       search: 'Barcode',
       status: 'DISCONTINUED',
       page: 4,
@@ -156,9 +209,9 @@ describe('ProductsComponent', () => {
       direction: 'desc',
     };
 
-    component['resetFilters']();
+    facade.resetFilters();
 
-    expect(component['filters']).toEqual({
+    expect(facade.filters).toEqual({
       search: '',
       status: 'ALL',
       page: 0,
@@ -174,13 +227,13 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['filters'].page = 5;
-    expect(component['filters'].size).toBe(10);
+    facade.filters.page = 5;
+    expect(facade.filters.size).toBe(10);
 
-    (component as any).pageSizeChanged(20);
+    facade.pageSizeChanged(20);
 
-    expect(component['filters'].size).toBe(20);
-    expect(component['filters'].page).toBe(0);
+    expect(facade.filters.size).toBe(20);
+    expect(facade.filters.page).toBe(0);
     expectGetProductsCalledWith(defaultQuery({ size: 20 }));
   });
 
@@ -189,17 +242,17 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['pageData'] = createPage([], {
+    facade.pageData = createPage([], {
       page: 2,
       totalPages: 5,
       first: false,
       last: false,
     });
-    component['filters'].page = 2;
+    facade.filters.page = 2;
 
-    component['previousPage']();
+    facade.previousPage();
 
-    expect(component['filters'].page).toBe(1);
+    expect(facade.filters.page).toBe(1);
     expectGetProductsCalledWith(defaultQuery({ page: 1 }));
   });
 
@@ -208,17 +261,17 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['pageData'] = createPage([], {
+    facade.pageData = createPage([], {
       page: 0,
       totalPages: 1,
       first: true,
       last: true,
     });
-    component['filters'].page = 0;
+    facade.filters.page = 0;
 
-    component['previousPage']();
+    facade.previousPage();
 
-    expect(component['filters'].page).toBe(0);
+    expect(facade.filters.page).toBe(0);
     expect(productsApiMock.getProducts).not.toHaveBeenCalled();
   });
 
@@ -227,17 +280,17 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['pageData'] = createPage([], {
+    facade.pageData = createPage([], {
       page: 1,
       totalPages: 5,
       first: false,
       last: false,
     });
-    component['filters'].page = 1;
+    facade.filters.page = 1;
 
-    component['nextPage']();
+    facade.nextPage();
 
-    expect(component['filters'].page).toBe(2);
+    expect(facade.filters.page).toBe(2);
     expectGetProductsCalledWith(defaultQuery({ page: 2 }));
   });
 
@@ -246,17 +299,17 @@ describe('ProductsComponent', () => {
     fixture.detectChanges();
     productsApiMock.getProducts.mockClear();
 
-    component['pageData'] = createPage([], {
+    facade.pageData = createPage([], {
       page: 0,
       totalPages: 1,
       first: true,
       last: true,
     });
-    component['filters'].page = 0;
+    facade.filters.page = 0;
 
-    component['nextPage']();
+    facade.nextPage();
 
-    expect(component['filters'].page).toBe(0);
+    expect(facade.filters.page).toBe(0);
     expect(productsApiMock.getProducts).not.toHaveBeenCalled();
   });
 
@@ -269,32 +322,41 @@ describe('ProductsComponent', () => {
     productsApiMock.getProducts.mockReturnValue(response$.asObservable());
     fixture.detectChanges();
 
-    expect(component['loading']).toBe(true);
+    expect(facade.loading).toBe(true);
 
     response$.next(expectedPage);
     response$.complete();
 
-    expect(component['loading']).toBe(false);
-    expect(component['errorMessage']).toBe('');
-    expect(component['pageData']).toEqual(expectedPage);
+    expect(facade.loading).toBe(false);
+    expect(facade.errorMessage).toBe('');
+    expect(facade.pageData).toEqual(expectedPage);
   });
 
-  it('should set errorMessage when request fails', () => {
+  it('should set errorMessage and reset pageData when request fails', () => {
     productsApiMock.getProducts.mockReturnValue(
       throwError(
         () =>
           new HttpErrorResponse({
             status: 500,
             statusText: 'Server Error',
-            url: '/api/products',
+            url: '/api/v1/products',
           }),
       ),
     );
 
     fixture.detectChanges();
 
-    expect(component['loading']).toBe(false);
-    expect(component['errorMessage']).toContain('Could not load products (500)');
+    expect(facade.loading).toBe(false);
+    expect(facade.errorMessage).toContain('Could not load products (500)');
+    expect(facade.pageData).toEqual({
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+      first: true,
+      last: true,
+      content: [],
+    });
   });
 
   it('should render rows returned by the API', () => {
@@ -323,12 +385,30 @@ describe('ProductsComponent', () => {
     expect(text).toContain('No products found for the selected filters.');
   });
 
+  it('should render error state when loading products fails', () => {
+    productsApiMock.getProducts.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 503,
+            statusText: 'Service Unavailable',
+            url: '/api/v1/products',
+          }),
+      ),
+    );
+
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Could not load products (503)');
+  });
+
   it('should trigger filtering from the Apply filters button and update the UI', () => {
     productsApiMock.getProducts.mockReturnValue(of(createPage([createProduct()])));
     fixture.detectChanges();
 
-    component['filters'].search = '1001';
-    component['filters'].status = 'BLOCKED';
+    facade.filters.search = '1001';
+    facade.filters.status = 'BLOCKED';
 
     const filteredPage = createPage([
       createProduct({
@@ -348,6 +428,7 @@ describe('ProductsComponent', () => {
     const applyButton: HTMLButtonElement = fixture.nativeElement.querySelector(
       '.products-filters__buttons .button--primary',
     );
+
     applyButton.click();
     fixture.detectChanges();
 
@@ -361,6 +442,19 @@ describe('ProductsComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Blocked Demo Item');
     expect(text).toContain('1 total product(s) returned by the backend.');
+  });
+
+  it('should trigger refresh from the Refresh data button', () => {
+    productsApiMock.getProducts.mockReturnValue(of(createPage([createProduct()])));
+    fixture.detectChanges();
+    productsApiMock.getProducts.mockClear();
+
+    const refreshButton: HTMLButtonElement =
+      fixture.nativeElement.querySelector('.page__actions .button');
+
+    refreshButton.click();
+
+    expectGetProductsCalledWith(defaultQuery());
   });
 
   it('should return correct badge class for product status', () => {

@@ -9,7 +9,7 @@
     </div>
 
     <div class="page__actions">
-      <button class="button button--secondary" type="button" (click)="loadProducts()">
+      <button class="button button--secondary" type="button" (click)="facade.loadProducts()">
         Refresh data
       </button>
     </div>
@@ -29,16 +29,16 @@
             id="search"
             type="text"
             placeholder="Search by SKU or name"
-            [(ngModel)]="filters.search"
-            (keyup.enter)="applyFilters()"
+            [(ngModel)]="facade.filters.search"
+            (keyup.enter)="facade.applyFilters()"
           />
         </div>
 
         <div class="products-filters__controls">
           <div class="form-field">
             <label for="status">Status</label>
-            <select id="status" [(ngModel)]="filters.status">
-              @for (status of statuses; track status) {
+            <select id="status" [(ngModel)]="facade.filters.status">
+              @for (status of facade.statuses; track status) {
                 <option [ngValue]="status">{{ status }}</option>
               }
             </select>
@@ -48,8 +48,8 @@
             <label for="page-size">Page size</label>
             <select
               id="page-size"
-              [ngModel]="filters.size"
-              (ngModelChange)="pageSizeChanged($event)"
+              [ngModel]="facade.filters.size"
+              (ngModelChange)="facade.pageSizeChanged($event)"
             >
               <option [ngValue]="10">10</option>
               <option [ngValue]="20">20</option>
@@ -59,7 +59,7 @@
 
           <div class="form-field">
             <label for="sort-by">Sort by</label>
-            <select id="sort-by" [(ngModel)]="filters.sortBy" (ngModelChange)="applyFilters()">
+            <select id="sort-by" [(ngModel)]="facade.filters.sortBy" (ngModelChange)="facade.applyFilters()">
               <option value="id">ID</option>
               <option value="sku">SKU</option>
               <option value="name">Name</option>
@@ -70,7 +70,7 @@
 
           <div class="form-field">
             <label for="direction">Direction</label>
-            <select id="direction" [(ngModel)]="filters.direction" (ngModelChange)="applyFilters()">
+            <select id="direction" [(ngModel)]="facade.filters.direction" (ngModelChange)="facade.applyFilters()">
               <option value="asc">ASC</option>
               <option value="desc">DESC</option>
             </select>
@@ -78,11 +78,11 @@
         </div>
 
         <div class="products-filters__buttons">
-          <button class="button button--primary" type="button" (click)="applyFilters()">
+          <button class="button button--primary" type="button" (click)="facade.applyFilters()">
             Apply filters
           </button>
 
-          <button class="button button--secondary" type="button" (click)="resetFilters()">
+          <button class="button button--secondary" type="button" (click)="facade.resetFilters()">
             Reset
           </button>
         </div>
@@ -94,44 +94,44 @@
     <div class="card__header">
       <h3 class="card__title">Inventory table</h3>
       <p class="card__subtitle">
-        {{ pageData.totalElements }} total product(s) returned by the backend.
+        {{ facade.pageData.totalElements }} total product(s) returned by the backend.
       </p>
     </div>
 
     <div class="card__body">
-      @if (loading) {
+      @if (facade.loading) {
         <div class="state-message">
           Loading products...
         </div>
       }
 
-      @if (!loading && errorMessage) {
+      @if (!facade.loading && facade.errorMessage) {
         <div class="state-message state-message--error">
-          {{ errorMessage }}
+          {{ facade.errorMessage }}
         </div>
       }
 
-      @if (!loading && !errorMessage && pageData.content.length === 0) {
+      @if (!facade.loading && !facade.errorMessage && facade.pageData.content.length === 0) {
         <div class="table-empty">
           No products found for the selected filters.
         </div>
       }
 
-      @if (!loading && !errorMessage && pageData.content.length > 0) {
+      @if (!facade.loading && !facade.errorMessage && facade.pageData.content.length > 0) {
         <div class="table-toolbar">
           <div class="table-toolbar__group">
             <span class="table-toolbar__label">Results</span>
-            <strong>{{ pageData.totalElements }}</strong>
+            <strong>{{ facade.pageData.totalElements }}</strong>
           </div>
 
           <div class="table-toolbar__group">
             <span class="table-toolbar__label">Page</span>
-            <strong>{{ pageData.page + 1 }} / {{ pageData.totalPages || 1 }}</strong>
+            <strong>{{ facade.pageData.page + 1 }} / {{ facade.pageData.totalPages || 1 }}</strong>
           </div>
 
           <div class="table-toolbar__group">
             <span class="table-toolbar__label">Rows shown</span>
-            <strong>{{ pageData.content.length }}</strong>
+            <strong>{{ facade.pageData.content.length }}</strong>
           </div>
         </div>
 
@@ -152,7 +152,7 @@
             </tr>
             </thead>
             <tbody>
-              @for (product of pageData.content; track product.id) {
+              @for (product of facade.pageData.content; track product.id) {
                 <tr>
                   <td>
                     <span class="id-chip">#{{ product.id }}</span>
@@ -201,15 +201,15 @@
 
         <div class="pagination">
           <div class="pagination__meta">
-            Page {{ pageData.page + 1 }} of {{ pageData.totalPages || 1 }}
+            Page {{ facade.pageData.page + 1 }} of {{ facade.pageData.totalPages || 1 }}
           </div>
 
           <div class="pagination__actions">
             <button
               class="button button--secondary"
               type="button"
-              (click)="previousPage()"
-              [disabled]="pageData.first"
+              (click)="facade.previousPage()"
+              [disabled]="facade.pageData.first"
             >
               Previous
             </button>
@@ -217,8 +217,8 @@
             <button
               class="button button--secondary"
               type="button"
-              (click)="nextPage()"
-              [disabled]="pageData.last"
+              (click)="facade.nextPage()"
+              [disabled]="facade.pageData.last"
             >
               Next
             </button>
