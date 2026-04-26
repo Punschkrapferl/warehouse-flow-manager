@@ -23,7 +23,9 @@ public class CreateProductRequest {
         @Size(max = 100, message = "SKU must not exceed 100 characters")
         @Schema(
                 description = "Unique stock keeping unit of the product",
-                example = "SKU-5001"
+                example = "SKU-5001",
+                maxLength = 100,
+                requiredMode = Schema.RequiredMode.REQUIRED
         )
         private String sku;
 
@@ -31,14 +33,18 @@ public class CreateProductRequest {
         @Size(max = 150, message = "Name must not exceed 150 characters")
         @Schema(
                 description = "Human-readable product name",
-                example = "Heavy Duty Container"
+                example = "Heavy Duty Container",
+                maxLength = 150,
+                requiredMode = Schema.RequiredMode.REQUIRED
         )
         private String name;
 
         @Size(max = 500, message = "Description must not exceed 500 characters")
         @Schema(
                 description = "Optional product description",
-                example = "Container for warehouse transport"
+                example = "Container for warehouse transport",
+                maxLength = 500,
+                nullable = true
         )
         private String description;
 
@@ -46,7 +52,9 @@ public class CreateProductRequest {
         @Size(max = 50, message = "Unit must not exceed 50 characters")
         @Schema(
                 description = "Measurement unit of the product",
-                example = "piece"
+                example = "piece",
+                maxLength = 50,
+                requiredMode = Schema.RequiredMode.REQUIRED
         )
         private String unit;
 
@@ -55,13 +63,14 @@ public class CreateProductRequest {
         @Schema(
                 description = "Initial stock quantity. If greater than zero, an initial INBOUND stock movement is created automatically",
                 example = "10",
-                minimum = "0"
+                minimum = "0",
+                requiredMode = Schema.RequiredMode.REQUIRED
         )
         private Integer quantity;
 
         @PositiveOrZero(message = "Minimum quantity must be zero or greater")
         @Schema(
-                description = "Low-stock threshold",
+                description = "Low-stock threshold. Defaults to 0 when omitted",
                 example = "2",
                 minimum = "0",
                 nullable = true
@@ -69,7 +78,7 @@ public class CreateProductRequest {
         private Integer minimumQuantity;
 
         @Schema(
-                description = "Product status",
+                description = "Product status. Defaults to ACTIVE when omitted",
                 example = "ACTIVE",
                 allowableValues = {"ACTIVE", "BLOCKED", "DISCONTINUED"},
                 nullable = true
