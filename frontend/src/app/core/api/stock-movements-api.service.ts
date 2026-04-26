@@ -6,6 +6,7 @@ import {
   StockMovementSummaryResponse,
   StockMovementType,
 } from './api.types';
+import { ApiPaths } from './api-paths';
 
 export interface StockMovementQuery {
   productId?: number;
@@ -39,7 +40,7 @@ export class StockMovementsApiService {
       params = params.set('to', query.to);
     }
 
-    return this.http.get<StockMovementResponse[]>('/api/stock-movements', { params });
+    return this.http.get<StockMovementResponse[]>(ApiPaths.stockMovements, { params });
   }
 
   getStockMovementSummary(
@@ -59,7 +60,7 @@ export class StockMovementsApiService {
       params = params.set('to', query.to);
     }
 
-    return this.http.get<StockMovementSummaryResponse>('/api/stock-movements/summary', {
+    return this.http.get<StockMovementSummaryResponse>(ApiPaths.stockMovementSummary, {
       params,
     });
   }

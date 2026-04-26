@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { PagedResponse, ProductResponse, ProductStatus } from './api.types';
+import { ApiPaths } from './api-paths';
 
 export interface ProductQuery {
   search?: string;
@@ -33,6 +34,6 @@ export class ProductsApiService {
       params = params.set('status', query.status);
     }
 
-    return this.http.get<PagedResponse<ProductResponse>>('/api/products', { params });
+    return this.http.get<PagedResponse<ProductResponse>>(ApiPaths.products, { params });
   }
 }
