@@ -1,8 +1,8 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, finalize, of, tap } from 'rxjs';
 import { PagedResponse, ProductResponse, ProductStatus } from '../../core/api/api.types';
 import { ProductQuery, ProductsApiService } from '../../core/api/products-api.service';
+import { ApiErrorMessageService } from '../../core/error/api-error-message.service';
 
 export type ProductStatusFilter = ProductStatus | 'ALL';
 
@@ -37,6 +37,7 @@ const EMPTY_PRODUCT_PAGE: PagedResponse<ProductResponse> = {
 @Injectable()
 export class ProductsFacade {
   private readonly productsApi = inject(ProductsApiService);
+  private readonly apiErrorMessage = inject(ApiErrorMessageService);
 
   readonly statuses: ProductStatusFilter[] = ['ALL', 'ACTIVE', 'BLOCKED', 'DISCONTINUED'];
 
@@ -57,7 +58,7 @@ export class ProductsFacade {
           this.pageData = pageData;
         }),
         catchError((error) => {
-          this.errorMessage = this.buildErrorMessage(error);
+          this.errorMessage = this.apiErrorMessage.toMessage(error, 'Could not load products.');
           this.pageData = {
             ...EMPTY_PRODUCT_PAGE,
             page: this.filters.page,
@@ -116,13 +117,5 @@ export class ProductsFacade {
       search: this.filters.search.trim() || undefined,
       status: this.filters.status === 'ALL' ? undefined : this.filters.status,
     };
-  }
-
-  private buildErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      return `Could not load products (${error.status}). ${error.message}`;
-    }
-
-    return 'Could not load products. Check whether the Spring Boot backend is running.';
   }
 }

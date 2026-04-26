@@ -5,10 +5,12 @@ import {
   StorageLocationStockOverviewResponse,
 } from '../../core/api/api.types';
 import { StorageLocationsApiService } from '../../core/api/storage-locations-api.service';
+import { ApiErrorMessageService } from '../../core/error/api-error-message.service';
 
 @Injectable()
 export class StorageLocationsFacade {
   private readonly storageLocationsApi = inject(StorageLocationsApiService);
+  private readonly apiErrorMessage = inject(ApiErrorMessageService);
 
   loadingLocations = false;
   loadingOverview = false;
@@ -34,7 +36,10 @@ export class StorageLocationsFacade {
           this.clearSelectionIfLocationNoLongerExists(locations);
         }),
         catchError((error) => {
-          this.errorMessage = this.buildErrorMessage(error, 'Could not load storage locations.');
+          this.errorMessage = this.apiErrorMessage.toMessage(
+            error,
+            'Could not load storage locations.',
+          );
           this.locations = [];
           this.filteredLocations = [];
           this.selectedLocation = null;
@@ -102,7 +107,7 @@ export class StorageLocationsFacade {
           this.selectedOverview = overview;
         }),
         catchError((error) => {
-          this.errorMessage = this.buildErrorMessage(
+          this.errorMessage = this.apiErrorMessage.toMessage(
             error,
             'Could not load storage location overview.',
           );
@@ -130,13 +135,5 @@ export class StorageLocationsFacade {
       this.selectedLocation = null;
       this.selectedOverview = null;
     }
-  }
-
-  private buildErrorMessage(error: unknown, fallbackMessage: string): string {
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-
-    return fallbackMessage;
   }
 }

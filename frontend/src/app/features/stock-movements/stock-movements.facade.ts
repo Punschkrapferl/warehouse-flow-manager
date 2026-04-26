@@ -9,6 +9,7 @@ import {
   StockMovementQuery,
   StockMovementsApiService,
 } from '../../core/api/stock-movements-api.service';
+import { ApiErrorMessageService } from '../../core/error/api-error-message.service';
 
 export type MovementTypeFilter = 'ALL' | StockMovementType;
 
@@ -29,6 +30,7 @@ const DEFAULT_FILTERS: StockMovementFilters = {
 @Injectable()
 export class StockMovementsFacade {
   private readonly stockMovementsApi = inject(StockMovementsApiService);
+  private readonly apiErrorMessage = inject(ApiErrorMessageService);
 
   readonly movementTypes: MovementTypeFilter[] = ['ALL', 'INBOUND', 'OUTBOUND', 'ADJUSTMENT'];
 
@@ -59,7 +61,10 @@ export class StockMovementsFacade {
           this.summary = result.summary;
         }),
         catchError((error) => {
-          this.errorMessage = this.buildErrorMessage(error);
+          this.errorMessage = this.apiErrorMessage.toMessage(
+            error,
+            'Could not load stock movement data.',
+          );
           this.movements = [];
           this.summary = null;
 
@@ -124,13 +129,5 @@ export class StockMovementsFacade {
 
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-  }
-
-  private buildErrorMessage(error: unknown): string {
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-
-    return 'Could not load stock movement data.';
   }
 }

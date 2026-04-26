@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, finalize, forkJoin, of, tap } from 'rxjs';
 import {
@@ -8,10 +7,12 @@ import {
   StockMovementResponse,
 } from '../../core/api/api.types';
 import { DashboardApiService } from '../../core/api/dashboard-api.service';
+import { ApiErrorMessageService } from '../../core/error/api-error-message.service';
 
 @Injectable()
 export class DashboardFacade {
   private readonly dashboardApi = inject(DashboardApiService);
+  private readonly apiErrorMessage = inject(ApiErrorMessageService);
 
   loading = true;
   errorMessage = '';
@@ -39,7 +40,10 @@ export class DashboardFacade {
           this.recentMovements = result.recentMovements;
         }),
         catchError((error) => {
-          this.errorMessage = this.buildErrorMessage(error);
+          this.errorMessage = this.apiErrorMessage.toMessage(
+            error,
+            'Could not load dashboard data.',
+          );
           this.health = null;
           this.lowStockProducts = [];
           this.replenishmentCandidates = [];
@@ -62,13 +66,5 @@ export class DashboardFacade {
   get criticalCount(): number {
     return this.replenishmentCandidates.filter((candidate) => candidate.priority === 'CRITICAL')
       .length;
-  }
-
-  private buildErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      return `Could not load dashboard data (${error.status}). ${error.message}`;
-    }
-
-    return 'Could not load dashboard data. Check whether the Spring Boot backend is running on localhost:8080.';
   }
 }
