@@ -10,7 +10,7 @@
     </div>
 
     <div class="page-hero__actions">
-      <button class="button button--ghost" type="button" (click)="refreshData()">
+      <button class="button button--ghost" type="button" (click)="facade.refreshData()">
         Refresh activity
       </button>
     </div>
@@ -35,7 +35,7 @@
           type="number"
           min="1"
           placeholder="Optional product id"
-          [(ngModel)]="filters.productId"
+          [(ngModel)]="facade.filters.productId"
         />
       </div>
 
@@ -44,12 +44,11 @@
         <select
           id="movementType"
           class="select"
-          [(ngModel)]="filters.movementType"
+          [(ngModel)]="facade.filters.movementType"
         >
-          <option value="ALL">ALL</option>
-          <option value="INBOUND">INBOUND</option>
-          <option value="OUTBOUND">OUTBOUND</option>
-          <option value="ADJUSTMENT">ADJUSTMENT</option>
+          @for (movementType of facade.movementTypes; track movementType) {
+            <option [ngValue]="movementType">{{ movementType }}</option>
+          }
         </select>
       </div>
 
@@ -57,7 +56,7 @@
         <button
           class="button button--primary"
           type="button"
-          (click)="applyFilters()"
+          (click)="facade.applyFilters()"
         >
           Apply filters
         </button>
@@ -65,7 +64,7 @@
         <button
           class="button button--ghost"
           type="button"
-          (click)="resetFilters()"
+          (click)="facade.resetFilters()"
         >
           Reset
         </button>
@@ -77,7 +76,7 @@
           id="from"
           class="input"
           type="datetime-local"
-          [(ngModel)]="filters.from"
+          [(ngModel)]="facade.filters.from"
         />
       </div>
 
@@ -87,15 +86,15 @@
           id="to"
           class="input"
           type="datetime-local"
-          [(ngModel)]="filters.to"
+          [(ngModel)]="facade.filters.to"
         />
       </div>
     </div>
   </section>
 
-  @if (errorMessage) {
+  @if (facade.errorMessage) {
     <div class="alert alert--error">
-      {{ errorMessage }}
+      {{ facade.errorMessage }}
     </div>
   }
 
@@ -106,12 +105,12 @@
       <div class="summary-hero__meta">
         <span>
           Product:
-          {{ summary?.productId ?? 'All products' }}
+          {{ facade.summary?.productId ?? 'All products' }}
         </span>
         <span>•</span>
         <span>
           SKU:
-          {{ summary?.productSku || 'Mixed scope' }}
+          {{ facade.summary?.productSku || 'Mixed scope' }}
         </span>
       </div>
     </div>
@@ -121,7 +120,7 @@
     <article class="ops-panel movement-kpi">
       <div class="movement-kpi__label">Total movements</div>
       <div class="movement-kpi__value">
-        {{ loadingSummary ? '...' : (summary?.totalMovements ?? 0) }}
+        {{ facade.loadingSummary ? '...' : (facade.summary?.totalMovements ?? 0) }}
       </div>
       <div class="movement-kpi__meta">All matching stock movement records</div>
     </article>
@@ -129,30 +128,33 @@
     <article class="ops-panel movement-kpi">
       <div class="movement-kpi__label">Inbound</div>
       <div class="movement-kpi__value">
-        {{ loadingSummary ? '...' : (summary?.totalInboundQuantity ?? 0) }}
+        {{ facade.loadingSummary ? '...' : (facade.summary?.totalInboundQuantity ?? 0) }}
       </div>
       <div class="movement-kpi__meta">
-        {{ loadingSummary ? '...' : (summary?.inboundMovementCount ?? 0) }} inbound movement(s)
+        {{ facade.loadingSummary ? '...' : (facade.summary?.inboundMovementCount ?? 0) }}
+        inbound movement(s)
       </div>
     </article>
 
     <article class="ops-panel movement-kpi">
       <div class="movement-kpi__label">Outbound</div>
       <div class="movement-kpi__value">
-        {{ loadingSummary ? '...' : (summary?.totalOutboundQuantity ?? 0) }}
+        {{ facade.loadingSummary ? '...' : (facade.summary?.totalOutboundQuantity ?? 0) }}
       </div>
       <div class="movement-kpi__meta">
-        {{ loadingSummary ? '...' : (summary?.outboundMovementCount ?? 0) }} outbound movement(s)
+        {{ facade.loadingSummary ? '...' : (facade.summary?.outboundMovementCount ?? 0) }}
+        outbound movement(s)
       </div>
     </article>
 
     <article class="ops-panel movement-kpi">
       <div class="movement-kpi__label">Adjustment</div>
       <div class="movement-kpi__value">
-        {{ loadingSummary ? '...' : (summary?.totalAdjustmentQuantity ?? 0) }}
+        {{ facade.loadingSummary ? '...' : (facade.summary?.totalAdjustmentQuantity ?? 0) }}
       </div>
       <div class="movement-kpi__meta">
-        {{ loadingSummary ? '...' : (summary?.adjustmentMovementCount ?? 0) }} adjustment movement(s)
+        {{ facade.loadingSummary ? '...' : (facade.summary?.adjustmentMovementCount ?? 0) }}
+        adjustment movement(s)
       </div>
     </article>
   </section>
@@ -162,18 +164,19 @@
       <div>
         <h2 class="panel-title">Movement history</h2>
         <p class="panel-subtitle">
-          {{ loadingMovements ? 'Loading...' : movements.length }} record(s) returned by the backend.
+          {{ facade.loadingMovements ? 'Loading...' : facade.movements.length }}
+          record(s) returned by the backend.
         </p>
       </div>
 
       <div class="table-panel__hint">Newest first</div>
     </div>
 
-    @if (loadingMovements) {
+    @if (facade.loadingMovements) {
       <div class="state-box">
         Loading stock movements...
       </div>
-    } @else if (movements.length === 0) {
+    } @else if (facade.movements.length === 0) {
       <div class="state-box">
         No stock movements found for the selected filters.
       </div>
@@ -194,7 +197,7 @@
           </thead>
 
           <tbody>
-            @for (movement of movements; track movement.id) {
+            @for (movement of facade.movements; track movement.id) {
               <tr>
                 <td>
                   <span class="id-chip">{{ movement.id }}</span>
@@ -202,28 +205,12 @@
                 <td>{{ movement.productId }}</td>
                 <td class="movement-sku">{{ movement.productSku }}</td>
                 <td>
-                  <span [class]="
-                          movement.movementType === 'OUTBOUND'
-                            ? 'badge badge--warning'
-                            : movement.movementType === 'INBOUND'
-                              ? 'badge badge--success'
-                              : 'badge badge--neutral'
-                        "
-                  >
-                   {{ movement.movementType }}
+                  <span [class]="movementBadgeClass(movement.movementType)">
+                    {{ movement.movementType }}
                   </span>
-
                 </td>
                 <td>
-                  <span
-                  [class]="
-                          movement.movementType === 'OUTBOUND'
-                            ? 'metric-pill metric-pill--critical'
-                            : movement.movementType === 'INBOUND'
-                              ? 'metric-pill metric-pill--success'
-                              : 'metric-pill metric-pill--neutral'
-                        "
-                  >
+                  <span [class]="movementQuantityClass(movement.movementType)">
                     {{ movement.quantity }}
                   </span>
                 </td>

@@ -1,135 +1,47 @@
-import { CommonModule, DatePipe } from '@angular/common';
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { catchError, finalize, of, tap } from 'rxjs';
+import { DatePipe } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { StockMovementsApiService } from '../../core/api/stock-movements-api.service';
-import {
-  StockMovementResponse,
-  StockMovementSummaryResponse,
-  StockMovementType,
-} from '../../core/api/api.types';
-
-type MovementTypeFilter = 'ALL' | StockMovementType;
+import { StockMovementType } from '../../core/api/api.types';
+import { StockMovementsFacade } from './stock-movements.facade';
 
 @Component({
   selector: 'app-stock-movements',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe],
+  providers: [StockMovementsFacade],
   templateUrl: './stock-movements.component.html',
   styleUrls: ['./stock-movements.component.scss'],
 })
 export class StockMovementsComponent implements OnInit {
-  private readonly stockMovementsApi = inject(StockMovementsApiService);
-  private readonly cdr = inject(ChangeDetectorRef);
-
-  protected loadingMovements = false;
-  protected loadingSummary = false;
-  protected errorMessage = '';
-
-  protected movements: StockMovementResponse[] = [];
-  protected summary: StockMovementSummaryResponse | null = null;
-
-  protected filters = {
-    productId: '',
-    movementType: 'ALL' as MovementTypeFilter,
-    from: '',
-    to: '',
-  };
+  protected readonly facade = inject(StockMovementsFacade);
 
   ngOnInit(): void {
-    this.loadData();
+    this.facade.loadData();
   }
 
-  protected refreshData(): void {
-    this.loadData();
-  }
-
-  protected applyFilters(): void {
-    this.loadData();
-  }
-
-  protected resetFilters(): void {
-    this.filters = {
-      productId: '',
-      movementType: 'ALL',
-      from: '',
-      to: '',
-    };
-
-    this.loadData();
-  }
-
-  private loadData(): void {
-    this.loadingMovements = true;
-    this.loadingSummary = true;
-    this.errorMessage = '';
-
-    const productId = this.parseProductId(this.filters.productId);
-    const movementType =
-      this.filters.movementType === 'ALL' ? undefined : this.filters.movementType;
-    const from = this.toIsoInstant(this.filters.from);
-    const to = this.toIsoInstant(this.filters.to);
-
-    this.stockMovementsApi
-      .getStockMovements({
-        productId,
-        movementType,
-        from,
-        to,
-      })
-      .pipe(
-        tap((movements) => {
-          this.movements = movements;
-        }),
-        catchError((error) => {
-          this.errorMessage = error?.message || 'Could not load stock movements.';
-          return of([]);
-        }),
-        finalize(() => {
-          this.loadingMovements = false;
-          this.cdr.detectChanges();
-        }),
-        ).subscribe();
-
-    this.stockMovementsApi
-      .getStockMovementSummary({
-        productId,
-        from,
-        to,
-      })
-      .pipe(
-        tap((summary) => {
-          this.summary = summary;
-          this.loadingSummary = false;
-        }),
-        catchError((error) => {
-          this.errorMessage = error?.message || 'Could not load stock movement summary.';
-          return of([]);
-        }),
-        finalize(() => {
-          this.loadingSummary = false;
-          this.cdr.detectChanges();
-        }),
-        ).subscribe();
-  }
-
-  private parseProductId(value: string): number | undefined {
-    const trimmed = value.trim();
-
-    if (!trimmed) {
-      return undefined;
+  protected movementBadgeClass(type: StockMovementType): string {
+    switch (type) {
+      case 'INBOUND':
+        return 'badge badge--success';
+      case 'OUTBOUND':
+        return 'badge badge--warning';
+      case 'ADJUSTMENT':
+        return 'badge badge--neutral';
+      default:
+        return 'badge badge--neutral';
     }
-
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
   }
 
-  private toIsoInstant(value: string): string | undefined {
-    if (!value) {
-      return undefined;
+  protected movementQuantityClass(type: StockMovementType): string {
+    switch (type) {
+      case 'INBOUND':
+        return 'metric-pill metric-pill--success';
+      case 'OUTBOUND':
+        return 'metric-pill metric-pill--critical';
+      case 'ADJUSTMENT':
+        return 'metric-pill metric-pill--neutral';
+      default:
+        return 'metric-pill metric-pill--neutral';
     }
-
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
   }
 }
