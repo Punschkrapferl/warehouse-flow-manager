@@ -10,24 +10,24 @@
     </div>
 
     <div class="page-hero__actions">
-      <button class="button button--ghost" type="button" (click)="loadLocations()">
+      <button class="button button--ghost" type="button" (click)="facade.loadLocations()">
         Refresh locations
       </button>
 
       <button
         class="button button--primary"
         type="button"
-        (click)="refreshOverview()"
-        [disabled]="!selectedLocation"
+        (click)="facade.refreshOverview()"
+        [disabled]="!facade.selectedLocation"
       >
         Refresh overview
       </button>
     </div>
   </header>
 
-  @if (errorMessage) {
+  @if (facade.errorMessage) {
     <div class="alert alert--error">
-      {{ errorMessage }}
+      {{ facade.errorMessage }}
     </div>
   }
 
@@ -49,44 +49,44 @@
           class="input"
           type="text"
           placeholder="Search by code, zone, or description"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="applySearch()"
+          [(ngModel)]="facade.searchTerm"
+          (ngModelChange)="facade.applySearch()"
         />
       </div>
 
       <div class="directory-stats">
         <article class="stat-card">
           <span class="stat-card__label">Total</span>
-          <span class="stat-card__value">{{ totalCount }}</span>
+          <span class="stat-card__value">{{ facade.totalCount }}</span>
         </article>
 
         <article class="stat-card">
           <span class="stat-card__label">Active</span>
-          <span class="stat-card__value">{{ activeCount }}</span>
+          <span class="stat-card__value">{{ facade.activeCount }}</span>
         </article>
 
         <article class="stat-card">
           <span class="stat-card__label">Inactive</span>
-          <span class="stat-card__value">{{ inactiveCount }}</span>
+          <span class="stat-card__value">{{ facade.inactiveCount }}</span>
         </article>
       </div>
 
       <div class="directory-list">
-        @if (loadingLocations) {
+        @if (facade.loadingLocations) {
           <div class="state-box">
             Loading storage locations...
           </div>
-        } @else if (filteredLocations.length === 0) {
+        } @else if (facade.filteredLocations.length === 0) {
           <div class="state-box">
             No storage locations match the current search.
           </div>
         } @else {
-          @for (location of filteredLocations; track location.id) {
+          @for (location of facade.filteredLocations; track location.id) {
             <button
               type="button"
               class="location-card"
-              [class.location-card--active]="selectedLocation?.id === location.id"
-              (click)="selectLocation(location)"
+              [class.location-card--active]="facade.selectedLocation?.id === location.id"
+              (click)="facade.selectLocation(location)"
             >
               <div class="location-card__top">
                 <div>
@@ -123,47 +123,47 @@
 
         <div class="panel-header__side">
           <span class="overview-selected-label">
-            {{ selectedLocation ? selectedLocation.code : 'No location selected' }}
+            {{ facade.selectedLocation ? facade.selectedLocation.code : 'No location selected' }}
           </span>
         </div>
       </div>
 
-      @if (!selectedLocation && !loadingOverview) {
+      @if (!facade.selectedLocation && !facade.loadingOverview) {
         <div class="state-box">
           Select a storage location from the directory to view its stock overview.
         </div>
       }
 
-      @if (selectedLocation && loadingOverview) {
+      @if (facade.selectedLocation && facade.loadingOverview) {
         <div class="state-box">
           Loading stock overview...
         </div>
       }
 
-      @if (selectedLocation && selectedOverview && !loadingOverview) {
+      @if (facade.selectedLocation && facade.selectedOverview && !facade.loadingOverview) {
         <div class="overview-content">
           <div class="overview-kpis">
             <article class="kpi-card">
               <span class="kpi-card__label">Products</span>
-              <span class="kpi-card__value">{{ selectedOverview.totalProducts }}</span>
+              <span class="kpi-card__value">{{ facade.selectedOverview.totalProducts }}</span>
             </article>
 
             <article class="kpi-card">
               <span class="kpi-card__label">Total quantity</span>
-              <span class="kpi-card__value">{{ selectedOverview.totalQuantity }}</span>
+              <span class="kpi-card__value">{{ facade.selectedOverview.totalQuantity }}</span>
             </article>
 
             <article class="kpi-card">
               <span class="kpi-card__label">Low stock items</span>
               <span class="kpi-card__value">
-                {{ selectedOverview.lowStockProductCount }}
+                {{ facade.selectedOverview.lowStockProductCount }}
               </span>
             </article>
 
             <article class="kpi-card">
               <span class="kpi-card__label">Status</span>
               <span class="kpi-card__value">
-                {{ selectedOverview.active ? 'Active' : 'Inactive' }}
+                {{ facade.selectedOverview.active ? 'Active' : 'Inactive' }}
               </span>
             </article>
           </div>
@@ -171,18 +171,18 @@
           <div class="overview-meta">
             <div class="meta-block">
               <span class="meta-block__label">Location code</span>
-              <span class="meta-block__value">{{ selectedOverview.code }}</span>
+              <span class="meta-block__value">{{ facade.selectedOverview.code }}</span>
             </div>
 
             <div class="meta-block">
               <span class="meta-block__label">Zone</span>
-              <span class="meta-block__value">{{ selectedOverview.zone }}</span>
+              <span class="meta-block__value">{{ facade.selectedOverview.zone }}</span>
             </div>
 
             <div class="meta-block meta-block--full">
               <span class="meta-block__label">Description</span>
               <span class="meta-block__value">
-                {{ selectedOverview.description || 'No description available.' }}
+                {{ facade.selectedOverview.description || 'No description available.' }}
               </span>
             </div>
           </div>
@@ -192,13 +192,13 @@
               <div>
                 <h3 class="table-panel__title">Assigned products</h3>
                 <p class="table-panel__subtitle">
-                  {{ selectedOverview.products.length }} product(s) assigned to this
+                  {{ facade.selectedOverview.products.length }} product(s) assigned to this
                   location.
                 </p>
               </div>
             </div>
 
-            @if (selectedOverview.products.length === 0) {
+            @if (facade.selectedOverview.products.length === 0) {
               <div class="state-box">
                 No products are currently assigned to this storage location.
               </div>
@@ -218,7 +218,7 @@
                   </tr>
                   </thead>
                   <tbody>
-                    @for (product of selectedOverview.products; track product.id) {
+                    @for (product of facade.selectedOverview.products; track product.id) {
                       <tr>
                         <td>{{ product.id }}</td>
                         <td>{{ product.sku }}</td>
