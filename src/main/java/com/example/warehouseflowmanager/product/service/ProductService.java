@@ -1,6 +1,7 @@
 package com.example.warehouseflowmanager.product.service;
 
 import com.example.warehouseflowmanager.common.dto.PagedResponse;
+import com.example.warehouseflowmanager.common.exception.InvalidRequestException;
 import com.example.warehouseflowmanager.common.exception.InvalidStockMovementException;
 import com.example.warehouseflowmanager.common.exception.ResourceConflictException;
 import com.example.warehouseflowmanager.common.exception.ResourceNotFoundException;
@@ -11,11 +12,11 @@ import com.example.warehouseflowmanager.product.dto.UpdateProductRequest;
 import com.example.warehouseflowmanager.product.entity.Product;
 import com.example.warehouseflowmanager.product.entity.ProductStatus;
 import com.example.warehouseflowmanager.product.repository.ProductRepository;
-import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
-import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovement;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.repository.StockMovementRepository;
+import com.example.warehouseflowmanager.storagelocation.entity.StorageLocation;
+import com.example.warehouseflowmanager.storagelocation.repository.StorageLocationRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -74,8 +75,6 @@ public class ProductService {
         product.setQuantity(request.getQuantity());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(productStatus);
-
-        // On creation, assigning an inactive storage location is not allowed.
         product.setStorageLocation(resolveStorageLocationForCreate(request.getStorageLocationId()));
 
         Product savedProduct = productRepository.save(product);
@@ -96,14 +95,12 @@ public class ProductService {
             String direction
     ) {
         String normalizedSearch = normalizeSearch(search);
-        int normalizedPage = Math.max(page, 0);
-        int normalizedSize = normalizePageSize(size);
         String normalizedSortBy = normalizeSortBy(sortBy);
         Sort.Direction sortDirection = normalizeSortDirection(direction);
 
         PageRequest pageRequest = PageRequest.of(
-                normalizedPage,
-                normalizedSize,
+                page,
+                size,
                 Sort.by(sortDirection, normalizedSortBy)
         );
 
@@ -139,7 +136,6 @@ public class ProductService {
                 .map(Product::getId)
                 .toList();
 
-        // Look back over the requested time window to estimate recent outbound demand.
         Instant cutoff = Instant.now().minus(Duration.ofDays(recentDays));
 
         Map<Long, Integer> recentOutboundByProductId = stockMovementRepository
@@ -203,9 +199,6 @@ public class ProductService {
         product.setUnit(request.getUnit().trim());
         product.setMinimumQuantity(normalizeMinimumQuantity(request.getMinimumQuantity()));
         product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
-
-        // The regular update endpoint still supports storage location changes.
-        // The dedicated relocation endpoint below is the more warehouse-specific flow.
         product.setStorageLocation(resolveStorageLocationForUpdate(product, request.getStorageLocationId()));
 
         productRepository.save(product);
@@ -218,7 +211,6 @@ public class ProductService {
         Product product = getProductByIdOrThrow(productId);
         StorageLocation targetStorageLocation = getStorageLocationByIdOrThrow(targetStorageLocationId);
 
-        // Relocation to the exact same location is not a meaningful warehouse action.
         if (isSameStorageLocation(product.getStorageLocation(), targetStorageLocation)) {
             throw new ResourceConflictException(
                     "Product with id " + productId
@@ -226,7 +218,6 @@ public class ProductService {
             );
         }
 
-        // Products may only be relocated into active storage locations.
         validateStorageLocationIsActive(targetStorageLocation);
 
         product.setStorageLocation(targetStorageLocation);
@@ -306,7 +297,6 @@ public class ProductService {
 
         StorageLocation targetStorageLocation = getStorageLocationByIdOrThrow(storageLocationId);
 
-        // Allow keeping the same already assigned location, even if it became inactive later.
         if (isSameStorageLocation(product.getStorageLocation(), targetStorageLocation)) {
             return targetStorageLocation;
         }
@@ -347,6 +337,7 @@ public class ProductService {
         if (description == null || description.isBlank()) {
             return null;
         }
+
         return description.trim();
     }
 
@@ -354,14 +345,8 @@ public class ProductService {
         if (search == null || search.isBlank()) {
             return "";
         }
-        return search.trim();
-    }
 
-    private int normalizePageSize(int size) {
-        if (size < 1) {
-            return 10;
-        }
-        return Math.min(size, 100);
+        return search.trim();
     }
 
     private String normalizeSortBy(String sortBy) {
@@ -370,8 +355,12 @@ public class ProductService {
         }
 
         String trimmedSortBy = sortBy.trim();
+
         if (!ALLOWED_SORT_FIELDS.contains(trimmedSortBy)) {
-            return "id";
+            throw new InvalidRequestException(
+                    "Unsupported sort field '" + trimmedSortBy
+                            + "'. Allowed values: " + String.join(", ", ALLOWED_SORT_FIELDS)
+            );
         }
 
         return trimmedSortBy;
@@ -385,7 +374,9 @@ public class ProductService {
         try {
             return Sort.Direction.fromString(direction.trim());
         } catch (IllegalArgumentException exception) {
-            return Sort.Direction.ASC;
+            throw new InvalidRequestException(
+                    "Unsupported sort direction '" + direction + "'. Allowed values: asc, desc"
+            );
         }
     }
 

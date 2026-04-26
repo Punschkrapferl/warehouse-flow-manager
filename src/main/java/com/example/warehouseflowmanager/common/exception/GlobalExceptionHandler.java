@@ -55,6 +55,20 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRequestException(
+            InvalidRequestException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest()
+                .body(buildErrorResponse(
+                        HttpStatus.BAD_REQUEST,
+                        ex.getMessage(),
+                        request.getRequestURI(),
+                        null
+                ));
+    }
+
     @ExceptionHandler(InvalidStockMovementException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidStockMovementException(
             InvalidStockMovementException ex,
@@ -75,10 +89,6 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
-
-        // ResponseStatusException may have a null reason.
-        // Fall back to the standard reason phrase so clients still receive
-        // a readable message.
         String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
 
         return ResponseEntity.status(status)
@@ -97,8 +107,6 @@ public class GlobalExceptionHandler {
     ) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
 
-        // Collect field-level validation messages in insertion order so the response
-        // is predictable and easy to read in Swagger UI, Postman, or frontend clients.
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             validationErrors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
         }
@@ -119,8 +127,6 @@ public class GlobalExceptionHandler {
     ) {
         Map<String, String> validationErrors = new LinkedHashMap<>();
 
-        // Constraint violations often come from validated path variables or query parameters.
-        // Extract only the final field/parameter name to keep the API response clean.
         for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
             String fieldName = extractFieldName(
                     violation.getPropertyPath() == null
@@ -161,8 +167,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadableException(
             HttpServletRequest request
     ) {
-        // This covers malformed JSON as well as values that cannot be deserialized
-        // into the target request DTO shape.
         return ResponseEntity.badRequest()
                 .body(buildErrorResponse(
                         HttpStatus.BAD_REQUEST,
@@ -204,8 +208,6 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
-        // Keep the client response neutral while logging full server-side details
-        // for debugging and future troubleshooting.
         log.error("Unexpected error while handling request {}", request.getRequestURI(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -234,10 +236,6 @@ public class GlobalExceptionHandler {
     }
 
     private String extractFieldName(String propertyPath) {
-        // Constraint violation paths can look like:
-        // - createProduct.id
-        // - listProducts.direction
-        // Return only the last segment because that is the part clients care about.
         int lastDotIndex = propertyPath.lastIndexOf('.');
 
         if (lastDotIndex >= 0 && lastDotIndex < propertyPath.length() - 1) {
@@ -250,8 +248,6 @@ public class GlobalExceptionHandler {
     private String buildTypeMismatchMessage(MethodArgumentTypeMismatchException ex) {
         Class<?> requiredType = ex.getRequiredType();
 
-        // Enum mismatches are common in query parameters.
-        // Returning the allowed values makes the 400 response much more helpful.
         if (requiredType != null && requiredType.isEnum()) {
             String allowedValues = Arrays.stream(requiredType.getEnumConstants())
                     .map(String::valueOf)
