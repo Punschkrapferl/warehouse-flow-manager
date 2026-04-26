@@ -1,6 +1,7 @@
 package com.example.warehouseflowmanager.product.controller;
 
 import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import com.example.warehouseflowmanager.common.dto.PagedResponse;
 import com.example.warehouseflowmanager.product.dto.CreateProductRequest;
 import com.example.warehouseflowmanager.product.dto.ProductResponse;
@@ -40,7 +41,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping(ApiPaths.PRODUCTS)
 @RequiredArgsConstructor
 @Validated
 @Tag(
@@ -187,6 +188,7 @@ public class ProductController {
             description = """
                     Returns products with optional filtering, pagination, and sorting.
                     Filters can be combined by status, storage location, and free-text search.
+                    Supported sort fields are: id, sku, name, quantity, status, minimumQuantity.
                     """
     )
     @ApiResponses({
@@ -227,7 +229,18 @@ public class ProductController {
             int size,
 
             @RequestParam(defaultValue = "id")
-            @Parameter(description = "Field used for sorting", example = "id")
+            @Parameter(
+                    description = "Field used for sorting",
+                    example = "id",
+                    schema = @Schema(allowableValues = {
+                            "id",
+                            "sku",
+                            "name",
+                            "quantity",
+                            "status",
+                            "minimumQuantity"
+                    })
+            )
             String sortBy,
 
             @RequestParam(defaultValue = "asc")

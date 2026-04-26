@@ -1,11 +1,15 @@
 package com.example.warehouseflowmanager.product.controller;
 
+import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementSummaryResponse;
 import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping(ApiPaths.PRODUCTS)
 @RequiredArgsConstructor
 @Validated
 @Tag(
@@ -40,8 +44,22 @@ public class ProductStockMovementController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Product stock movements retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid product ID or invalid query parameters"),
-            @ApiResponse(responseCode = "404", description = "Product not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid product ID or invalid query parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public List<StockMovementResponse> getProductStockMovements(
             @PathVariable
@@ -79,8 +97,22 @@ public class ProductStockMovementController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Product stock movement summary retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid product ID or invalid query parameters"),
-            @ApiResponse(responseCode = "404", description = "Product not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid product ID or invalid query parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StockMovementSummaryResponse getProductStockMovementSummary(
             @PathVariable

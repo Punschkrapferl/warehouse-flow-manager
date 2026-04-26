@@ -1,5 +1,7 @@
 package com.example.warehouseflowmanager.stockmovement.controller;
 
+import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import com.example.warehouseflowmanager.stockmovement.dto.CreateStockMovementRequest;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementResponse;
 import com.example.warehouseflowmanager.stockmovement.dto.StockMovementSummaryResponse;
@@ -7,6 +9,8 @@ import com.example.warehouseflowmanager.stockmovement.entity.StockMovementType;
 import com.example.warehouseflowmanager.stockmovement.service.StockMovementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +31,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/stock-movements")
+@RequestMapping(ApiPaths.STOCK_MOVEMENTS)
 @RequiredArgsConstructor
 @Validated
 @Tag(
@@ -50,8 +54,22 @@ public class StockMovementController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Stock movement created successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed or stock movement is not allowed"),
-            @ApiResponse(responseCode = "404", description = "Referenced product not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed or stock movement is not allowed",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Referenced product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StockMovementResponse createStockMovement(
             @Valid
@@ -69,7 +87,22 @@ public class StockMovementController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Stock movements retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed for one or more query parameters")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed for one or more query parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Referenced product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public List<StockMovementResponse> getStockMovements(
             @RequestParam(required = false)
@@ -107,7 +140,22 @@ public class StockMovementController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Stock movement summary retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed for one or more query parameters")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed for one or more query parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Referenced product not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StockMovementSummaryResponse getStockMovementSummary(
             @RequestParam(required = false)

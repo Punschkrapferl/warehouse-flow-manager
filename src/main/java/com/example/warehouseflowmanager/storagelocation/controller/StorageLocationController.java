@@ -1,5 +1,7 @@
 package com.example.warehouseflowmanager.storagelocation.controller;
 
+import com.example.warehouseflowmanager.common.api.ApiErrorResponse;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import com.example.warehouseflowmanager.storagelocation.dto.CreateStorageLocationRequest;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationResponse;
 import com.example.warehouseflowmanager.storagelocation.dto.StorageLocationStockOverviewResponse;
@@ -7,6 +9,8 @@ import com.example.warehouseflowmanager.storagelocation.dto.UpdateStorageLocatio
 import com.example.warehouseflowmanager.storagelocation.service.StorageLocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +31,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/storage-locations")
+@RequestMapping(ApiPaths.STORAGE_LOCATIONS)
 @RequiredArgsConstructor
 @Validated
 @Tag(
@@ -46,8 +50,22 @@ public class StorageLocationController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Storage location created successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "409", description = "A conflicting storage location already exists")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "A conflicting storage location already exists",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StorageLocationResponse createStorageLocation(
             @Valid
@@ -77,8 +95,22 @@ public class StorageLocationController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Storage location retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid storage location ID"),
-            @ApiResponse(responseCode = "404", description = "Storage location not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid storage location ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Storage location not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StorageLocationResponse getStorageLocationById(
             @PathVariable
@@ -96,8 +128,22 @@ public class StorageLocationController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Storage location stock overview retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid storage location ID"),
-            @ApiResponse(responseCode = "404", description = "Storage location not found")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid storage location ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Storage location not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StorageLocationStockOverviewResponse getStorageLocationStockOverview(
             @PathVariable
@@ -115,9 +161,30 @@ public class StorageLocationController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Storage location updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "404", description = "Storage location not found"),
-            @ApiResponse(responseCode = "409", description = "Update would create a conflict")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Validation failed",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Storage location not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Update would create a conflict",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public StorageLocationResponse updateStorageLocation(
             @PathVariable
@@ -141,9 +208,30 @@ public class StorageLocationController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Storage location deleted successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid storage location ID"),
-            @ApiResponse(responseCode = "404", description = "Storage location not found"),
-            @ApiResponse(responseCode = "409", description = "Storage location cannot be deleted because products are assigned")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid storage location ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Storage location not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Storage location cannot be deleted because products are assigned",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiErrorResponse.class)
+                    )
+            )
     })
     public void deleteStorageLocation(
             @PathVariable
