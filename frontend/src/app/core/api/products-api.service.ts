@@ -26,8 +26,8 @@ export class ProductsApiService {
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
 
-    if (query.search && query.search.trim().length > 0) {
-      params = params.set('search', query.search.trim());
+    if (query.search && String(query.search).trim().length > 0) {
+      params = params.set('search', String(query.search).trim());
     }
 
     if (query.status) {

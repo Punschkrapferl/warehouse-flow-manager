@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, ChangeDetectorRef } from '@angular/core';
 import { catchError, finalize, of, tap } from 'rxjs';
 import {
   StorageLocationResponse,
@@ -11,6 +11,7 @@ import { ApiErrorMessageService } from '../../core/error/api-error-message.servi
 export class StorageLocationsFacade {
   private readonly storageLocationsApi = inject(StorageLocationsApiService);
   private readonly apiErrorMessage = inject(ApiErrorMessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loadingLocations = false;
   loadingOverview = false;
@@ -49,6 +50,7 @@ export class StorageLocationsFacade {
         }),
         finalize(() => {
           this.loadingLocations = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe();
@@ -117,6 +119,7 @@ export class StorageLocationsFacade {
         }),
         finalize(() => {
           this.loadingOverview = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe();

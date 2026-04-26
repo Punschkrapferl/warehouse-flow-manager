@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, ChangeDetectorRef } from '@angular/core';
 import { catchError, finalize, of, tap } from 'rxjs';
 import { PagedResponse, ProductResponse, ProductStatus } from '../../core/api/api.types';
 import { ProductQuery, ProductsApiService } from '../../core/api/products-api.service';
@@ -38,6 +38,7 @@ const EMPTY_PRODUCT_PAGE: PagedResponse<ProductResponse> = {
 export class ProductsFacade {
   private readonly productsApi = inject(ProductsApiService);
   private readonly apiErrorMessage = inject(ApiErrorMessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly statuses: ProductStatusFilter[] = ['ALL', 'ACTIVE', 'BLOCKED', 'DISCONTINUED'];
 
@@ -69,6 +70,7 @@ export class ProductsFacade {
         }),
         finalize(() => {
           this.loading = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe();
@@ -114,7 +116,7 @@ export class ProductsFacade {
       size: this.filters.size,
       sortBy: this.filters.sortBy,
       direction: this.filters.direction,
-      search: this.filters.search.trim() || undefined,
+      search: String(this.filters.search).trim() || undefined,
       status: this.filters.status === 'ALL' ? undefined : this.filters.status,
     };
   }

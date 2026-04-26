@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, ChangeDetectorRef } from '@angular/core';
 import { catchError, finalize, forkJoin, of, tap } from 'rxjs';
 import {
   StockMovementResponse,
@@ -31,6 +31,7 @@ const DEFAULT_FILTERS: StockMovementFilters = {
 export class StockMovementsFacade {
   private readonly stockMovementsApi = inject(StockMovementsApiService);
   private readonly apiErrorMessage = inject(ApiErrorMessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly movementTypes: MovementTypeFilter[] = ['ALL', 'INBOUND', 'OUTBOUND', 'ADJUSTMENT'];
 
@@ -76,6 +77,7 @@ export class StockMovementsFacade {
         finalize(() => {
           this.loadingMovements = false;
           this.loadingSummary = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe();
@@ -112,7 +114,7 @@ export class StockMovementsFacade {
   }
 
   private parseProductId(value: string): number | undefined {
-    const trimmed = value.trim();
+    const trimmed = String(value).trim();
 
     if (!trimmed) {
       return undefined;

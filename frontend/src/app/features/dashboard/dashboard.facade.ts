@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, ChangeDetectorRef } from '@angular/core';
 import { catchError, finalize, forkJoin, of, tap } from 'rxjs';
 import {
   HealthResponse,
@@ -13,6 +13,7 @@ import { ApiErrorMessageService } from '../../core/error/api-error-message.servi
 export class DashboardFacade {
   private readonly dashboardApi = inject(DashboardApiService);
   private readonly apiErrorMessage = inject(ApiErrorMessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   loading = true;
   errorMessage = '';
@@ -58,6 +59,7 @@ export class DashboardFacade {
         }),
         finalize(() => {
           this.loading = false;
+          this.cdr.detectChanges();
         }),
       )
       .subscribe();
