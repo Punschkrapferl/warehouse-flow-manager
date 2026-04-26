@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.warehouseflowmanager.WarehouseFlowManagerApplication;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import java.util.Locale;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -58,7 +59,10 @@ class StorageLocationControllerIntegrationTest {
 
     @Test
     void shouldRejectDeletingStorageLocationWhenProductsAreAssigned() throws Exception {
-        String locationCode = TEST_LOCATION_CODE_PREFIX + UUID.randomUUID().toString().toUpperCase(Locale.ROOT);
+        String locationCode = TEST_LOCATION_CODE_PREFIX + UUID.randomUUID()
+                .toString()
+                .toUpperCase(Locale.ROOT);
+
         String productSku = TEST_PRODUCT_SKU_PREFIX + UUID.randomUUID();
 
         String createLocationRequest = """
@@ -70,7 +74,7 @@ class StorageLocationControllerIntegrationTest {
                 }
                 """.formatted(locationCode);
 
-        mockMvc.perform(post("/api/storage-locations")
+        mockMvc.perform(post(ApiPaths.STORAGE_LOCATIONS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createLocationRequest))
                 .andExpect(status().isCreated())
@@ -99,7 +103,7 @@ class StorageLocationControllerIntegrationTest {
                 }
                 """.formatted(productSku, storageLocationId);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createProductRequest))
                 .andExpect(status().isCreated())
@@ -107,7 +111,7 @@ class StorageLocationControllerIntegrationTest {
                 .andExpect(jsonPath("$.storageLocationId").value(storageLocationId))
                 .andExpect(jsonPath("$.storageLocationCode").value(locationCode));
 
-        mockMvc.perform(delete("/api/storage-locations/{id}", storageLocationId))
+        mockMvc.perform(delete(ApiPaths.STORAGE_LOCATIONS + "/{id}", storageLocationId))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").exists());
 

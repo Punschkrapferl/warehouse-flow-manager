@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.warehouseflowmanager.WarehouseFlowManagerApplication;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.Timestamp;
@@ -83,7 +84,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(sku);
 
-        MvcResult result = mockMvc.perform(post("/api/products")
+        MvcResult result = mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -146,7 +147,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(sku);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())
@@ -181,7 +182,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(sku, inactiveStorageLocationId);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isConflict())
@@ -226,7 +227,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(sku, inactiveStorageLocationId);
 
-        mockMvc.perform(put("/api/products/{id}", productId)
+        mockMvc.perform(put(ApiPaths.PRODUCTS + "/{id}", productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequestBody))
                 .andExpect(status().isConflict())
@@ -234,7 +235,7 @@ class ProductControllerIntegrationTest {
                         .value("Storage location with id " + inactiveStorageLocationId
                                 + " is inactive and cannot be assigned to a product"));
 
-        mockMvc.perform(get("/api/products/{id}", productId))
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/{id}", productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.storageLocationId").value(activeStorageLocationId));
     }
@@ -260,14 +261,14 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(targetStorageLocationId);
 
-        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+        mockMvc.perform(patch(ApiPaths.PRODUCTS + "/{id}/storage-location", productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(productId))
                 .andExpect(jsonPath("$.storageLocationId").value(targetStorageLocationId));
 
-        mockMvc.perform(get("/api/products/{id}", productId))
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/{id}", productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.storageLocationId").value(targetStorageLocationId));
     }
@@ -293,7 +294,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(inactiveStorageLocationId);
 
-        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+        mockMvc.perform(patch(ApiPaths.PRODUCTS + "/{id}/storage-location", productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isConflict())
@@ -301,7 +302,7 @@ class ProductControllerIntegrationTest {
                         .value("Storage location with id " + inactiveStorageLocationId
                                 + " is inactive and cannot be assigned to a product"));
 
-        mockMvc.perform(get("/api/products/{id}", productId))
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/{id}", productId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.storageLocationId").value(sourceStorageLocationId));
     }
@@ -326,7 +327,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(storageLocationId);
 
-        mockMvc.perform(patch("/api/products/{id}/storage-location", productId)
+        mockMvc.perform(patch(ApiPaths.PRODUCTS + "/{id}/storage-location", productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isConflict())
@@ -337,7 +338,7 @@ class ProductControllerIntegrationTest {
 
     @Test
     void shouldRejectNegativeProductId() throws Exception {
-        mockMvc.perform(get("/api/products/{id}", -1))
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/{id}", -1))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
                 .andExpect(jsonPath("$.validationErrors.id")
@@ -346,7 +347,7 @@ class ProductControllerIntegrationTest {
 
     @Test
     void shouldRejectInvalidSortDirection() throws Exception {
-        mockMvc.perform(get("/api/products")
+        mockMvc.perform(get(ApiPaths.PRODUCTS)
                         .param("direction", "sideways"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
@@ -356,7 +357,7 @@ class ProductControllerIntegrationTest {
 
     @Test
     void shouldRejectInvalidPageSize() throws Exception {
-        mockMvc.perform(get("/api/products")
+        mockMvc.perform(get(ApiPaths.PRODUCTS)
                         .param("size", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
@@ -366,7 +367,7 @@ class ProductControllerIntegrationTest {
 
     @Test
     void shouldRejectInvalidRecentDaysForReplenishmentCandidates() throws Exception {
-        mockMvc.perform(get("/api/products/replenishment-candidates")
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/replenishment-candidates")
                         .param("recentDays", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
@@ -387,7 +388,7 @@ class ProductControllerIntegrationTest {
         insertOutboundMovement(highProductId, 2, Instant.now().minusSeconds(5L * 24 * 60 * 60));
         insertOutboundMovement(mediumProductId, 3, Instant.now().minusSeconds(3L * 24 * 60 * 60));
 
-        MvcResult result = mockMvc.perform(get("/api/products/replenishment-candidates")
+        MvcResult result = mockMvc.perform(get(ApiPaths.PRODUCTS + "/replenishment-candidates")
                         .param("recentDays", "30"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -435,7 +436,7 @@ class ProductControllerIntegrationTest {
 
         createProductAndReturnId(zeroRecommendationSku, "Zero Recommendation Product", 0, 0, "ACTIVE", null);
 
-        MvcResult result = mockMvc.perform(get("/api/products/replenishment-candidates")
+        MvcResult result = mockMvc.perform(get(ApiPaths.PRODUCTS + "/replenishment-candidates")
                         .param("recentDays", "30"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -461,7 +462,7 @@ class ProductControllerIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(malformedRequestBody))
                 .andExpect(status().isBadRequest())
@@ -506,7 +507,7 @@ class ProductControllerIntegrationTest {
                 }
                 """.formatted(sku, name, quantity, minimumQuantity, status, storageLocationIdValue);
 
-        MvcResult result = mockMvc.perform(post("/api/products")
+        MvcResult result = mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())

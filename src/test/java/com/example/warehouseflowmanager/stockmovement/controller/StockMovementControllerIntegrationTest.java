@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.warehouseflowmanager.WarehouseFlowManagerApplication;
+import com.example.warehouseflowmanager.common.api.ApiPaths;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -72,7 +73,7 @@ class StockMovementControllerIntegrationTest {
                 }
                 """.formatted(productId);
 
-        mockMvc.perform(post("/api/stock-movements")
+        mockMvc.perform(post(ApiPaths.STOCK_MOVEMENTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockMovementRequest))
                 .andExpect(status().isCreated())
@@ -136,7 +137,7 @@ class StockMovementControllerIntegrationTest {
                 }
                 """.formatted(productId);
 
-        mockMvc.perform(post("/api/stock-movements")
+        mockMvc.perform(post(ApiPaths.STOCK_MOVEMENTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockMovementRequest))
                 .andExpect(status().isBadRequest())
@@ -173,7 +174,7 @@ class StockMovementControllerIntegrationTest {
                 }
                 """.formatted(sku, quantity);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createProductRequest))
                 .andExpect(status().isCreated())
