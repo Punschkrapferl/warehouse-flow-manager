@@ -65,7 +65,7 @@ public record ReplenishmentRecommendationResponse(
         @Schema(
                 description = "Business priority of the replenishment recommendation.",
                 example = "HIGH",
-                allowableValues = {"HIGH", "MEDIUM", "LOW"}
+                allowableValues = {"CRITICAL", "HIGH", "MEDIUM"}
         )
         String priority,
 

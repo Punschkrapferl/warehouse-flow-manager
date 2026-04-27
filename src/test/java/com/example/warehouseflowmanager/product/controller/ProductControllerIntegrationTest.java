@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -129,6 +130,159 @@ class ProductControllerIntegrationTest {
         assertEquals(10, ((Number) movementRow.get("quantity")).intValue());
         assertEquals(10, ((Number) movementRow.get("resulting_quantity")).intValue());
         assertEquals("Initial stock on product creation", movementRow.get("note"));
+    }
+
+    @Test
+    void shouldRejectDuplicateSkuWhenCreatingProduct() throws Exception {
+        String sku = TEST_SKU_PREFIX + "DUPLICATE-" + UUID.randomUUID();
+
+        createProductAndReturnId(
+                sku,
+                "Original Product",
+                0,
+                0,
+                "ACTIVE",
+                null
+        );
+
+        String duplicateRequestBody = """
+                {
+                  "sku": "%s",
+                  "name": "Duplicate Product",
+                  "description": "Should be rejected",
+                  "unit": "piece",
+                  "quantity": 0,
+                  "minimumQuantity": 0,
+                  "status": "ACTIVE"
+                }
+                """.formatted(sku);
+
+        mockMvc.perform(post(ApiPaths.PRODUCTS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateRequestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Product with SKU '" + sku + "' already exists"));
+
+        Long productCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM products
+                WHERE sku = ?
+                """, Long.class, sku);
+
+        assertNotNull(productCount);
+        assertEquals(1L, productCount);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenProductDoesNotExist() throws Exception {
+        long missingProductId = 999999999L;
+
+        mockMvc.perform(get(ApiPaths.PRODUCTS + "/{id}", missingProductId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message")
+                        .value("Product with id " + missingProductId + " not found"));
+    }
+
+    @Test
+    void shouldRejectProductUpdateWhenQuantityIsProvided() throws Exception {
+        String sku = TEST_SKU_PREFIX + "UPDATE-QUANTITY-" + UUID.randomUUID();
+
+        long productId = createProductAndReturnId(
+                sku,
+                "Quantity Update Product",
+                0,
+                0,
+                "ACTIVE",
+                null
+        );
+
+        String updateRequestBody = """
+                {
+                  "sku": "%s",
+                  "name": "Quantity Update Product",
+                  "description": "Attempt to change quantity through product update",
+                  "unit": "piece",
+                  "quantity": 99,
+                  "minimumQuantity": 0,
+                  "status": "ACTIVE"
+                }
+                """.formatted(sku);
+
+        mockMvc.perform(put(ApiPaths.PRODUCTS + "/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.validationErrors.quantity")
+                        .value("Quantity cannot be changed through product update. Use stock movements instead"));
+
+        Integer quantity = jdbcTemplate.queryForObject("""
+                SELECT quantity
+                FROM products
+                WHERE id = ?
+                """, Integer.class, productId);
+
+        assertNotNull(quantity);
+        assertEquals(0, quantity);
+    }
+
+    @Test
+    void shouldRejectDeletingProductWithStockOnHand() throws Exception {
+        String sku = TEST_SKU_PREFIX + "DELETE-STOCK-" + UUID.randomUUID();
+
+        long productId = createProductAndReturnId(
+                sku,
+                "Product With Stock",
+                5,
+                0,
+                "ACTIVE",
+                null
+        );
+
+        mockMvc.perform(delete(ApiPaths.PRODUCTS + "/{id}", productId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Product '" + sku + "' cannot be deleted because it still has stock on hand"));
+
+        Long productCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM products
+                WHERE id = ?
+                """, Long.class, productId);
+
+        assertNotNull(productCount);
+        assertEquals(1L, productCount);
+    }
+
+    @Test
+    void shouldRejectDeletingProductWithStockMovementHistory() throws Exception {
+        String sku = TEST_SKU_PREFIX + "DELETE-HISTORY-" + UUID.randomUUID();
+
+        long productId = createProductAndReturnId(
+                sku,
+                "Product With History",
+                0,
+                0,
+                "ACTIVE",
+                null
+        );
+
+        insertStockMovementHistory(productId);
+
+        mockMvc.perform(delete(ApiPaths.PRODUCTS + "/{id}", productId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Product '" + sku + "' cannot be deleted because stock movement history exists"));
+
+        Long productCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM products
+                WHERE id = ?
+                """, Long.class, productId);
+
+        assertNotNull(productCount);
+        assertEquals(1L, productCount);
     }
 
     @Test
@@ -541,6 +695,27 @@ class ProductControllerIntegrationTest {
                 currentQuantity,
                 "Inserted by replenishment integration test",
                 Timestamp.from(movementAt)
+        );
+    }
+
+    private void insertStockMovementHistory(long productId) {
+        jdbcTemplate.update("""
+                INSERT INTO stock_movements (
+                    product_id,
+                    movement_type,
+                    quantity,
+                    resulting_quantity,
+                    note,
+                    movement_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                productId,
+                "ADJUSTMENT",
+                0,
+                0,
+                "Inserted by delete-history integration test",
+                Timestamp.from(Instant.now())
         );
     }
 
