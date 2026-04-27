@@ -11,6 +11,19 @@
 npm-debug.log
 yarn-error.log
 
+# Angular
+/.angular/
+
+# Test output
+/coverage
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
 # IDEs and editors
 .idea/
 .project
@@ -30,10 +43,8 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
 .sass-cache/
 /connect.lock
-/coverage
 /libpeerconnection.log
 testem.log
 /typings
