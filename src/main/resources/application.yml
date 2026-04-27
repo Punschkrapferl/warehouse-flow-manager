@@ -12,10 +12,10 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-    show-sql: false
+        format_sql: false
 
   flyway:
     enabled: true
@@ -31,8 +31,19 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+    filter: true
+    try-it-out-enabled: true
+    disable-swagger-default-url: true
+  group-configs:
+    - group: warehouse-flow-manager-v1
+      paths-to-match:
+        - /api/v1/**
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
+    root: INFO
+    com.example.warehouseflowmanager: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN

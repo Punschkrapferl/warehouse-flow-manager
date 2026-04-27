@@ -21,25 +21,29 @@ public class PagedResponse<T> {
 
     @Schema(
             description = "Zero-based page index of the current result page.",
-            example = "0"
+            example = "0",
+            minimum = "0"
     )
     private int page;
 
     @Schema(
             description = "Requested page size.",
-            example = "10"
+            example = "10",
+            minimum = "1"
     )
     private int size;
 
     @Schema(
             description = "Total number of available elements across all pages.",
-            example = "57"
+            example = "57",
+            minimum = "0"
     )
     private long totalElements;
 
     @Schema(
             description = "Total number of available pages.",
-            example = "6"
+            example = "6",
+            minimum = "0"
     )
     private int totalPages;
 
@@ -56,7 +60,9 @@ public class PagedResponse<T> {
     private boolean last;
 
     @ArraySchema(
-            schema = @Schema(description = "Elements contained in the current page.")
+            arraySchema = @Schema(
+                    description = "Elements contained in the current page."
+            )
     )
     private List<T> content;
 

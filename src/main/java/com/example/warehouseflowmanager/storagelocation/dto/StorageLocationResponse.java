@@ -34,7 +34,8 @@ public class StorageLocationResponse {
 
     @Schema(
             description = "Optional description of the storage location.",
-            example = "Rack A, aisle 1, level 1"
+            example = "Rack A, aisle 1, level 1",
+            nullable = true
     )
     private String description;
 

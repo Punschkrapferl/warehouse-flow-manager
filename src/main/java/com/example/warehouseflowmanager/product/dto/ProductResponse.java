@@ -37,7 +37,8 @@ public class ProductResponse {
 
     @Schema(
             description = "Optional product description.",
-            example = "Large plastic bin for warehouse spare parts"
+            example = "Large plastic bin for warehouse spare parts",
+            nullable = true
     )
     private String description;
 
@@ -49,7 +50,8 @@ public class ProductResponse {
 
     @Schema(
             description = "Current available quantity in stock.",
-            example = "120"
+            example = "120",
+            minimum = "0"
     )
     private Integer quantity;
 
@@ -69,13 +71,15 @@ public class ProductResponse {
 
     @Schema(
             description = "Current lifecycle status of the product.",
-            example = "ACTIVE"
+            example = "ACTIVE",
+            allowableValues = {"ACTIVE", "BLOCKED", "DISCONTINUED"}
     )
     private ProductStatus status;
 
     @Schema(
             description = "Minimum quantity threshold below which the product is considered low stock.",
-            example = "25"
+            example = "25",
+            minimum = "0"
     )
     private Integer minimumQuantity;
 
