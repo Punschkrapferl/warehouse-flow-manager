@@ -21,7 +21,7 @@ public class StorageLocation {
     @Column(nullable = false, length = 100)
     private String zone;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
     private String description;
 
     @Column(nullable = false)
