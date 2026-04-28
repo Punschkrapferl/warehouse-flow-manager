@@ -1,4 +1,4 @@
-# Manual API Test Flow
+# Backend API Test Flow
 
 This document contains a structured manual test flow for the Warehouse Flow Manager backend.
 
@@ -6,8 +6,8 @@ It is intended for:
 
 - manual backend verification
 - recruiter or reviewer walkthroughs
-- quick smoke testing after setup
-- demonstrating the main warehouse workflows without needing a frontend
+- quick backend smoke testing after setup
+- demonstrating the main warehouse workflows without needing the frontend
 
 ---
 
@@ -17,6 +17,12 @@ Use the correct base URL depending on how the backend is running:
 
 - **Local dev mode:** `http://localhost:8080`
 - **Demo mode:** `http://localhost:8081`
+
+All backend API routes are versioned under:
+
+```text
+/api/v1
+```
 
 In all examples below, replace the base URL if needed.
 
@@ -29,6 +35,18 @@ You can test the API with:
 - Swagger UI
 - Postman
 - `curl`
+
+Swagger UI is available after the backend starts:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+For demo mode, use:
+
+```text
+http://localhost:8081/swagger-ui/index.html
+```
 
 ---
 
@@ -62,7 +80,7 @@ Use this first to confirm the application is running.
 
 ```bash
 curl http://localhost:8080/api/v1/health
-````
+```
 
 ### Example Response
 
@@ -81,7 +99,7 @@ curl http://localhost:8080/api/v1/health
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/storage-locations \
+curl -X POST http://localhost:8080/api/v1/storage-locations \
   -H "Content-Type: application/json" \
   -d '{
     "code": "A-01-01",
@@ -123,7 +141,7 @@ This creates a product and automatically creates an initial `INBOUND` stock move
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/api/v1/products \
   -H "Content-Type: application/json" \
   -d '{
     "sku": "SKU-1001",
@@ -177,7 +195,7 @@ curl -X POST http://localhost:8080/api/products \
 ### Request
 
 ```bash
-curl "http://localhost:8080/api/products?page=0&size=10&sortBy=id&direction=asc"
+curl "http://localhost:8080/api/v1/products?page=0&size=10&sortBy=id&direction=asc"
 ```
 
 ### Example Response
@@ -217,7 +235,7 @@ This increases the current quantity.
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/stock-movements \
+curl -X POST http://localhost:8080/api/v1/stock-movements \
   -H "Content-Type: application/json" \
   -d '{
     "productId": 1,
@@ -262,7 +280,7 @@ This removes stock and must not exceed the current quantity.
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/stock-movements \
+curl -X POST http://localhost:8080/api/v1/stock-movements \
   -H "Content-Type: application/json" \
   -d '{
     "productId": 1,
@@ -298,7 +316,7 @@ curl -X POST http://localhost:8080/api/stock-movements \
 }
 ```
 
-At this point, the product will likely be considered low stock because `quantity = 2` and `minimumQuantity = 3`.
+At this point, the product is considered low stock because `quantity = 2` and `minimumQuantity = 3`.
 
 ---
 
@@ -307,7 +325,7 @@ At this point, the product will likely be considered low stock because `quantity
 ### Request
 
 ```bash
-curl http://localhost:8080/api/products/low-stock
+curl http://localhost:8080/api/v1/products/low-stock
 ```
 
 ### Example Response
@@ -339,7 +357,7 @@ This endpoint combines current shortage with recent outbound demand.
 ### Request
 
 ```bash
-curl "http://localhost:8080/api/products/replenishment-candidates?recentDays=30"
+curl "http://localhost:8080/api/v1/products/replenishment-candidates?recentDays=30"
 ```
 
 ### Example Response
@@ -370,7 +388,7 @@ curl "http://localhost:8080/api/products/replenishment-candidates?recentDays=30"
 ### Request
 
 ```bash
-curl http://localhost:8080/api/products/1/stock-movements
+curl http://localhost:8080/api/v1/products/1/stock-movements
 ```
 
 ### Example Response
@@ -404,7 +422,7 @@ curl http://localhost:8080/api/products/1/stock-movements
     "movementType": "INBOUND",
     "quantity": 10,
     "resultingQuantity": 10,
-    "note": "Initial stock on products creation",
+    "note": "Initial stock on product creation",
     "movementAt": "2026-04-21T21:00:30Z"
   }
 ]
@@ -417,7 +435,7 @@ curl http://localhost:8080/api/products/1/stock-movements
 ### Request
 
 ```bash
-curl http://localhost:8080/api/products/1/stock-movements/summary
+curl http://localhost:8080/api/v1/products/1/stock-movements/summary
 ```
 
 ### Example Response
@@ -447,7 +465,7 @@ curl http://localhost:8080/api/products/1/stock-movements/summary
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/storage-locations \
+curl -X POST http://localhost:8080/api/v1/storage-locations \
   -H "Content-Type: application/json" \
   -d '{
     "code": "B-02-03",
@@ -455,6 +473,17 @@ curl -X POST http://localhost:8080/api/storage-locations \
     "description": "Rack B, aisle 2, level 3",
     "active": true
   }'
+```
+
+### Request JSON
+
+```json
+{
+  "code": "B-02-03",
+  "zone": "ZONE-B",
+  "description": "Rack B, aisle 2, level 3",
+  "active": true
+}
 ```
 
 ### Example Response
@@ -476,7 +505,7 @@ curl -X POST http://localhost:8080/api/storage-locations \
 ### Request
 
 ```bash
-curl -X PATCH http://localhost:8080/api/products/1/storage-location \
+curl -X PATCH http://localhost:8080/api/v1/products/1/storage-location \
   -H "Content-Type: application/json" \
   -d '{
     "storageLocationId": 2
@@ -516,7 +545,7 @@ curl -X PATCH http://localhost:8080/api/products/1/storage-location \
 ### Request
 
 ```bash
-curl http://localhost:8080/api/storage-locations/2/stock-overview
+curl http://localhost:8080/api/v1/storage-locations/2/stock-overview
 ```
 
 ### Example Response
@@ -548,14 +577,14 @@ curl http://localhost:8080/api/storage-locations/2/stock-overview
 
 ---
 
-## Example Validation Error
+## 14. Example Validation Error
 
 This shows how the API responds when a request is invalid.
 
 ### Request
 
 ```bash
-curl "http://localhost:8080/api/products?direction=sideways"
+curl "http://localhost:8080/api/v1/products?direction=sideways"
 ```
 
 ### Example Response
@@ -566,7 +595,7 @@ curl "http://localhost:8080/api/products?direction=sideways"
   "status": 400,
   "error": "Bad Request",
   "message": "Validation failed",
-  "path": "/api/products",
+  "path": "/api/v1/products",
   "validationErrors": {
     "direction": "Direction must be either 'asc' or 'desc'"
   }
@@ -575,14 +604,16 @@ curl "http://localhost:8080/api/products?direction=sideways"
 
 ---
 
-## Example Business Rule Error
+## 15. Example Business Rule Error
 
 This shows a business-rule rejection.
+
+Blocked products cannot be created with initial stock.
 
 ### Request
 
 ```bash
-curl -X POST http://localhost:8080/api/products \
+curl -X POST http://localhost:8080/api/v1/products \
   -H "Content-Type: application/json" \
   -d '{
     "sku": "SKU-BLOCKED-1",
@@ -603,15 +634,53 @@ curl -X POST http://localhost:8080/api/products \
   "status": 400,
   "error": "Bad Request",
   "message": "Blocked products cannot be created with initial stock",
-  "path": "/api/products",
+  "path": "/api/v1/products",
   "validationErrors": null
 }
 ```
 
+---
 
+## Quick Backend Verification Commands
 
+Run automated backend tests from the project root:
 
+```bash
+./mvnw test
+```
 
+Run the application locally:
 
+```bash
+./mvnw spring-boot:run
+```
 
+Run the demo environment:
 
+```bash
+./scripts/demo/run-demo.sh
+```
+
+Stop the demo environment:
+
+```bash
+./scripts/demo/stop-demo.sh
+```
+
+---
+
+## Notes 
+
+The backend demonstrates:
+
+- versioned REST API routes under `/api/v1`
+- Spring Boot layered architecture
+- PostgreSQL persistence
+- Flyway database migrations
+- DTO-based request and response models
+- validation for invalid input
+- centralized API error responses
+- business-rule checks for stock operations
+- integration tests for main API flows
+- OpenAPI/Swagger documentation
+- Docker-based demo setup
