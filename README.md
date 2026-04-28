@@ -979,6 +979,7 @@ A few noteworthy implementation details:
 - frontend API paths are centralized
 - frontend components delegate state and actions to feature facades
 - mocked Playwright E2E tests make frontend flows stable and reviewable without requiring a live backend
+- the Spring Boot backend can be inspected with JVM monitoring tools such as Java VisualVM or JProfiler to observe heap usage, thread activity, and runtime behavior during local test runs
 
 ---
 
