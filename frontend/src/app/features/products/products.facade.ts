@@ -15,6 +15,7 @@ export interface ProductFilters {
   direction: 'asc' | 'desc';
 }
 
+// Frontend defaults intentionally match the backend product listing defaults.
 const DEFAULT_FILTERS: ProductFilters = {
   search: '',
   status: 'ALL',
@@ -110,6 +111,8 @@ export class ProductsFacade {
     this.loadProducts();
   }
 
+  // Converts UI filter state into backend query parameters.
+  // Empty search values and the ALL status are omitted from the request.
   private buildQuery(): ProductQuery {
     return {
       page: this.filters.page,

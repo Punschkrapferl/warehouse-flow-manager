@@ -60,6 +60,7 @@ export class StockMovementsApiService {
       params = params.set('to', query.to);
     }
 
+    // The summary endpoint aggregates all movement types, so movementType is intentionally omitted.
     return this.http.get<StockMovementSummaryResponse>(ApiPaths.stockMovementSummary, {
       params,
     });

@@ -34,6 +34,7 @@ export class DashboardApiService {
   }
 
   getRecentStockMovements(limit: number): Observable<StockMovementResponse[]> {
+    // The backend returns newest movements first; the dashboard only needs a compact preview.
     return this.http
       .get<StockMovementResponse[]>(ApiPaths.stockMovements)
       .pipe(map((movements) => movements.slice(0, limit)));

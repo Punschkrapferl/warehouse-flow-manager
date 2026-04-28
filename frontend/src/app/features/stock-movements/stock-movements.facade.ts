@@ -105,6 +105,8 @@ export class StockMovementsFacade {
     };
   }
 
+  // The summary endpoint uses the same product/date scope as the movement list,
+  // but does not accept movementType because it aggregates all movement types.
   private buildSummaryQuery(query: StockMovementQuery): Omit<StockMovementQuery, 'movementType'> {
     return {
       productId: query.productId,
@@ -113,6 +115,7 @@ export class StockMovementsFacade {
     };
   }
 
+  // Ignore empty or invalid product IDs instead of sending invalid query parameters.
   private parseProductId(value: string): number | undefined {
     const trimmed = String(value).trim();
 
@@ -124,6 +127,7 @@ export class StockMovementsFacade {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
   }
 
+  // Convert datetime-local input values into ISO strings expected by the backend.
   private toIsoInstant(value: string): string | undefined {
     if (!value) {
       return undefined;

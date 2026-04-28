@@ -23,6 +23,8 @@ export class DashboardFacade {
   replenishmentCandidates: ReplenishmentRecommendationResponse[] = [];
   recentMovements: StockMovementResponse[] = [];
 
+  // Loads the dashboard as one coordinated view-model so the component only renders state
+  // and does not need to know how many backend endpoints are involved.
   loadDashboard(): void {
     this.loading = true;
     this.errorMessage = '';
@@ -40,6 +42,7 @@ export class DashboardFacade {
           this.replenishmentCandidates = result.replenishmentCandidates;
           this.recentMovements = result.recentMovements;
         }),
+        // Clear partial dashboard data so the UI does not show stale values after a failed refresh.
         catchError((error) => {
           this.errorMessage = this.apiErrorMessage.toMessage(
             error,

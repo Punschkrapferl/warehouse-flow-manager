@@ -1,3 +1,6 @@
+// Central frontend API path definitions.
+// Keep this aligned with the backend ApiPaths.java constants.
+
 export const API_BASE_PATH = '/api/v1';
 
 export const ApiPaths = {

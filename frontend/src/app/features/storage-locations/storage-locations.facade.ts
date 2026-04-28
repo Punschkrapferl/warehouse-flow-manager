@@ -69,6 +69,8 @@ export class StorageLocationsFacade {
     this.loadOverview(this.selectedLocation.id);
   }
 
+  // Storage locations are loaded once and filtered client-side because the backend
+  // currently exposes a simple unpaged location list.
   applySearch(): void {
     const term = this.searchTerm.trim().toLowerCase();
 
@@ -125,6 +127,7 @@ export class StorageLocationsFacade {
       .subscribe();
   }
 
+  // Prevent the overview panel from showing stale data after the location list is refreshed.
   private clearSelectionIfLocationNoLongerExists(locations: StorageLocationResponse[]): void {
     if (!this.selectedLocation) {
       return;

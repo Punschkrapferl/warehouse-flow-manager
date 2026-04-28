@@ -45,6 +45,7 @@ export class ApiErrorMessageService {
 
     const backendError = errorBody as BackendErrorBody;
 
+    // Prefer field-level validation errors because they are more useful than the generic backend message.
     if (backendError.validationErrors) {
       const validationMessages = Object.entries(backendError.validationErrors)
         .map(([field, message]) => `${field}: ${message}`)
@@ -59,6 +60,7 @@ export class ApiErrorMessageService {
   }
 
   private removeTrailingPunctuation(message: string): string {
+    // Allows callers to pass natural fallback messages with or without final punctuation.
     return message.trim().replace(/[.!?]+$/, '');
   }
 }

@@ -1,3 +1,6 @@
+// Frontend representations of backend API response contracts.
+// Keep these types aligned with the Spring Boot DTOs returned from /api/v1 endpoints.
+
 export type ProductStatus = 'ACTIVE' | 'BLOCKED' | 'DISCONTINUED';
 export type StockMovementType = 'INBOUND' | 'OUTBOUND' | 'ADJUSTMENT';
 export type ReplenishmentPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM';

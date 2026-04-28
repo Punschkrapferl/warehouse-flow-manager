@@ -14,6 +14,7 @@ export class StorageLocationsApiService {
     return this.http.get<StorageLocationResponse[]>(ApiPaths.storageLocations);
   }
 
+  // The overview endpoint is location-specific and combines location metadata with assigned product stock.
   getStorageLocationStockOverview(id: number): Observable<StorageLocationStockOverviewResponse> {
     return this.http.get<StorageLocationStockOverviewResponse>(
       storageLocationStockOverviewPath(id),

@@ -26,6 +26,8 @@ export class ProductsApiService {
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
 
+    // Optional filters are only sent when they contain real values.
+    // This keeps frontend requests aligned with the backend's default filtering behavior.
     if (query.search && String(query.search).trim().length > 0) {
       params = params.set('search', String(query.search).trim());
     }

@@ -1,3 +1,7 @@
+// Central mocked backend used by Playwright E2E tests.
+// This keeps frontend browser tests deterministic and independent from the Spring Boot API,
+// PostgreSQL, Docker, and seeded database state.
+
 import { Page, Route } from '@playwright/test';
 
 type ProductStatus = 'ACTIVE' | 'BLOCKED' | 'DISCONTINUED';
@@ -269,6 +273,8 @@ const replenishmentCandidates: ReplenishmentRecommendationResponse[] = [
   },
 ];
 
+// Intercepts all /api/v1 requests made by the Angular app during Playwright tests.
+// Only GET endpoints are mocked because the current frontend milestone is read-only.
 export async function mockWarehouseApi(page: Page): Promise<void> {
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
@@ -302,7 +308,10 @@ export async function mockWarehouseApi(page: Page): Promise<void> {
       return;
     }
 
+    // Mirrors the backend product list behavior closely enough for frontend filtering tests:
+    // search, status filtering, and paged response shape.
     if (path === '/api/v1/products') {
+      // Small helper to keep mocked API responses consistent across all E2E routes.
       await fulfillJson(route, buildProductsPage(url));
       return;
     }
