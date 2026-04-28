@@ -883,14 +883,19 @@ Detailed backend manual testing is documented in:
 
 ### Frontend tests
 
-Run from the `frontend/` directory:
+Run Angular unit/API tests from the `frontend/` directory:
 
 ```bash
 npm test
 ```
 
-Frontend tests cover:
+For a non-watch CI-style test run:
 
+```bash 
+npm run test:ci
+```
+
+Frontend tests cover:
 - Angular components
 - feature facades
 - API service behavior
@@ -927,31 +932,37 @@ Run from the `frontend/` directory:
 npm run build
 ```
 
+### Frontend verification script
+
+The frontend also provides one combined verification script:
+
+```bash
+npm run verify
+```
+
+This runs:
+
+- Angular unit/API tests in CI mode
+- mocked Playwright E2E tests
+- Angular production build
+
+It is useful before committing frontend changes or before presenting the project.
+
 ---
 
-## Final Verification Checklist
+## Quick Verification
 
-Before presenting or submitting the project, run the backend tests from the project root:
+Run backend verification from the project root:
 
 ```bash
-./mvnw test
+./scripts/demo/run-demo-test.sh
 ```
 
-Then run the frontend checks:
+Run frontend verification:
 
-```bash
+```bash 
 cd frontend
-npm test
-npm run e2e
-npm run build
-```
-
-Optional Docker demo check:
-
-```bash
-cd ..
-./scripts/demo/run-demo.sh
-./scripts/demo/stop-demo.sh
+npm run verify
 ```
 
 ---

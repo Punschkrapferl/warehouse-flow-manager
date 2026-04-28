@@ -18,6 +18,27 @@ Use the correct base URL depending on how the backend is running:
 - **Local dev mode:** `http://localhost:8080`
 - **Demo mode:** `http://localhost:8081`
 
+---
+
+## Important Note About Demo Data
+
+The manual create/update flow below is best used with a clean development database.
+
+The demo database may already contain seeded storage locations, products, and stock movements for screenshots and portfolio presentation. If you run this manual flow against the seeded demo database, some create requests may fail because storage location codes or product SKUs already exist.
+
+For the clean manual flow, reset and start the local development environment first:
+
+```bash
+./scripts/dev/reset-dev-db.sh
+./scripts/dev/run-dev.sh
+```
+
+Then run the Spring Boot application locally and use:
+
+```text
+http://localhost:8080
+```
+
 All backend API routes are versioned under:
 
 ```text
@@ -646,13 +667,33 @@ curl -X POST http://localhost:8080/api/v1/products \
 Run automated backend tests from the project root:
 
 ```bash
-./mvnw test
+./scripts/dev/run-dev-test.sh
 ```
 
-Run the application locally:
+Start the local development environment:
 
 ```bash
-./mvnw spring-boot:run
+./scripts/dev/run-dev.sh
+```
+
+This starts the local PostgreSQL database and the Spring Boot application.
+
+Stop the dev environment:
+
+```bash
+./scripts/dev/stop-dev.sh
+```
+
+Reset the dev database:
+
+```bash
+./scripts/dev/reset-dev-db.sh
+```
+
+Run the automated backend tests for the demo environment:
+
+```bash
+./scripts/demo/run-demo-test.sh
 ```
 
 Run the demo environment:
@@ -667,9 +708,15 @@ Stop the demo environment:
 ./scripts/demo/stop-demo.sh
 ```
 
----
+Reset the demo database:
 
-## Notes 
+```bash
+./scripts/demo/reset-demo-db.sh
+```
+
+--- 
+
+## Notes
 
 The backend demonstrates:
 

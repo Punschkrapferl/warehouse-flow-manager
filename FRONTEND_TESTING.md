@@ -108,13 +108,23 @@ frontend/
 The frontend provides the following relevant npm scripts:
 
 ```bash
+npm start
+npm run start:demo
 npm test
+npm run test:ci
 npm run e2e
 npm run e2e:ui
 npm run e2e:headed
 npm run e2e:debug
 npm run build
+npm run verify
 ```
+
+The recommended one-command frontend check is:
+
+```bash
+npm run verify
+``` 
 
 ---
 
@@ -145,6 +155,23 @@ After the tests pass, quit the watch process with:
 ```text
 q
 ```
+
+### CI-Style Angular Test Run
+
+Run:
+
+```bash
+npm run test:ci
+```
+
+This runs the Angular unit/API tests once without watch mode.
+
+It is useful for:
+
+- automated verification
+- local pre-commit checks
+- CI pipelines
+- reviewer-friendly test execution
 
 ---
 
@@ -329,9 +356,19 @@ The build check is useful because it catches:
 Before committing frontend changes, run:
 
 ```bash
+npm run verify
+```
+
+This command runs:
+
+- Angular unit/API tests in CI mode
+- mocked Playwright E2E tests
+- Angular production build
+
+For interactive local unit test development, use:
+
+```bash
 npm test
-npm run e2e
-npm run build
 ```
 
 Because `npm test` runs in watch mode, quit it with:
@@ -339,8 +376,6 @@ Because `npm test` runs in watch mode, quit it with:
 ```text
 q
 ```
-
-Then continue with the E2E and build checks.
 
 ---
 
