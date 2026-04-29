@@ -1,7 +1,7 @@
 -- Demo seed data for Warehouse Flow Manager.
--- This file is only loaded when the "demo" Spring profile is active.
--- It is intended for portfolio screenshots, reviewer walkthroughs, and local demos.
-
+-- This file is optional demo data for portfolio screenshots, reviewer walkthroughs, and local demos.
+-- It is intentionally stored under db/demo and should not be executed automatically as a normal Flyway migration.
+--
 -- This gives:
 -- 8 products
 -- 3 active storage locations
@@ -11,6 +11,53 @@
 -- active, blocked, and discontinued products
 -- inbound, outbound, and adjustment movements
 -- realistic replenishment candidates
+--
+-- Re-runnable behavior:
+-- Before inserting the demo records, this script deletes only the fixed demo records
+-- identified by their demo SKUs and demo storage location codes.
+-- It does not wipe arbitrary business data.
+
+BEGIN;
+
+-- Delete dependent demo stock movements first.
+-- Stock movements reference products, so they must be removed before demo products.
+DELETE FROM stock_movements
+WHERE product_id IN (
+    SELECT id
+    FROM products
+    WHERE sku IN (
+                  'SKU-1001',
+                  'SKU-1002',
+                  'SKU-1003',
+                  'SKU-1004',
+                  'SKU-1005',
+                  'SKU-1006',
+                  'SKU-1007',
+                  'SKU-1008'
+        )
+);
+
+-- Delete fixed demo products.
+DELETE FROM products
+WHERE sku IN (
+              'SKU-1001',
+              'SKU-1002',
+              'SKU-1003',
+              'SKU-1004',
+              'SKU-1005',
+              'SKU-1006',
+              'SKU-1007',
+              'SKU-1008'
+    );
+
+-- Delete fixed demo storage locations.
+DELETE FROM storage_locations
+WHERE code IN (
+               'A-01-01',
+               'A-02-03',
+               'B-01-02',
+               'Q-99-01'
+    );
 
 INSERT INTO storage_locations (code, zone, description, active)
 VALUES
@@ -136,7 +183,6 @@ VALUES
         'Picking order for assembly area',
         NOW() - INTERVAL '3 days'
     ),
-
     (
         (SELECT id FROM products WHERE sku = 'SKU-1002'),
         'INBOUND',
@@ -161,7 +207,6 @@ VALUES
         'Urgent spare-part issue',
         NOW() - INTERVAL '1 day'
     ),
-
     (
         (SELECT id FROM products WHERE sku = 'SKU-1003'),
         'INBOUND',
@@ -186,7 +231,6 @@ VALUES
         'Inventory count correction after cycle count',
         NOW() - INTERVAL '2 days'
     ),
-
     (
         (SELECT id FROM products WHERE sku = 'SKU-1004'),
         'INBOUND',
@@ -203,7 +247,6 @@ VALUES
         'Scanner fleet replacement',
         NOW() - INTERVAL '5 days'
     ),
-
     (
         (SELECT id FROM products WHERE sku = 'SKU-1005'),
         'INBOUND',
@@ -220,7 +263,6 @@ VALUES
         'Outbound packing consumption',
         NOW() - INTERVAL '7 days'
     ),
-
     (
         (SELECT id FROM products WHERE sku = 'SKU-1008'),
         'INBOUND',
@@ -237,3 +279,5 @@ VALUES
         'Team equipment issue',
         NOW() - INTERVAL '2 days'
     );
+
+COMMIT;
