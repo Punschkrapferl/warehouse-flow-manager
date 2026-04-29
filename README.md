@@ -1,6 +1,6 @@
 # Warehouse Flow Manager
 
-Full-stack warehouse operations demo built with Spring Boot, Angular, PostgreSQL, Flyway, Docker, OpenAPI, and Playwright.
+Full-stack warehouse operations demo built with **Java 21**, **Spring Boot 4**, **PostgreSQL**, **Flyway**, **Angular**, **TypeScript**, **Docker**, **OpenAPI**, and **Playwright**.
 
 The application provides a versioned REST API and an Angular operations-console frontend for managing warehouse products, storage locations, stock movements, low-stock monitoring, and replenishment support.
 
@@ -8,24 +8,61 @@ The application provides a versioned REST API and an Angular operations-console 
 
 ## Overview
 
-Warehouse Flow Manager is a portfolio project designed to demonstrate a clean, interview-defensible full-stack application for a Java/Angular developer role.
-
-The backend is built with **Spring Boot 4**, **Java 21**, **PostgreSQL**, **Spring Data JPA**, and **Flyway**.
-
-The frontend is built with **Angular**, **TypeScript**, and **SCSS**, using feature-focused architecture, centralized API services, feature facades, and mocked Playwright E2E tests.
-
-The project demonstrates:
+Warehouse Flow Manager demonstrates:
 
 - versioned REST API design under `/api/v1`
-- business-rule driven backend logic
+- Spring Boot layered backend architecture
 - PostgreSQL persistence with Flyway migrations
-- Angular feature architecture
+- warehouse-specific business rules
+- stock movement workflows
+- low-stock and replenishment logic
+- Angular operations-console frontend
 - centralized frontend API services
-- centralized frontend error mapping
+- feature facades for frontend state handling
+- frontend error mapping
 - backend integration tests
 - frontend unit/API tests
 - mocked Playwright E2E tests
-- Docker-based dev/demo workflows
+- Docker-based development and demo workflows
+- optional demo seed data for portfolio screenshots
+
+---
+
+## Tech stack
+
+### Backend
+
+- Java 21
+- Spring Boot 4
+- Spring Web
+- Spring Validation
+- Spring Data JPA
+- Hibernate
+- PostgreSQL
+- Flyway
+- SpringDoc OpenAPI / Swagger UI
+- JUnit 5
+- MockMvc
+- Maven
+
+### Frontend
+
+- Angular
+- TypeScript
+- SCSS
+- Angular HTTP client
+- feature facade pattern
+- centralized API services
+- Playwright
+- nginx for Dockerized frontend runtime
+
+### Infrastructure
+
+- Docker
+- Docker Compose
+- Maven Wrapper
+- npm
+- shell scripts for development and demo workflows
 
 ---
 
@@ -51,7 +88,7 @@ The storage location view shows active and inactive warehouse locations, assigne
 
 ### Stock Movement Monitoring
 
-The stock movement view shows inbound, outbound, and adjustment activity with movement summaries and traceable stock history.
+The stock movement view shows inbound, outbound, and adjustment activity with traceable stock history.
 
 ![Stock Movement Monitoring](docs/screenshots/stock-movements.png)
 
@@ -63,880 +100,407 @@ The backend exposes documented, versioned REST endpoints under `/api/v1` through
 
 ---
 
-## Main Features
+## Main features
 
 ### Product management
 
-- Create, read, update, and delete products
-- Filter by status and storage location
-- Search by SKU or product name
-- Paginate and sort product lists
-- Prevent direct quantity changes through product updates
-- Relocate products to another storage location through a dedicated endpoint
+- create, read, update, and delete products
+- filter by status and storage location
+- search by SKU or product name
+- paginate and sort product lists
+- prevent direct quantity changes through product updates
+- relocate products through a dedicated endpoint
 
 ### Storage location management
 
-- Create, read, update, and delete storage locations
-- Prevent deletion when products are still assigned
-- Mark locations as active or inactive
-- Prevent assigning products to inactive locations
-- Show stock overview per storage location
+- create, read, update, and delete storage locations
+- prevent deletion while products are assigned
+- mark locations as active or inactive
+- prevent assigning products to inactive locations
+- show stock overview per storage location
 
 ### Stock movement handling
 
-- Create `INBOUND`, `OUTBOUND`, and `ADJUSTMENT` movements
-- Update product stock through controlled business rules
-- Prevent outbound quantities from exceeding available stock
-- Prevent stock movements for blocked products
-- Keep stock movement history for traceability
+- create `INBOUND`, `OUTBOUND`, and `ADJUSTMENT` movements
+- update product stock through controlled business rules
+- prevent outbound quantities from exceeding available stock
+- prevent stock movements for blocked products
+- keep stock movement history for traceability
 
 ### Inventory monitoring
 
-- Return low-stock products
-- Generate replenishment candidates
-- Prioritize replenishment using:
-  - current shortage against minimum quantity
+- show low-stock products
+- generate replenishment candidates
+- prioritize replenishment using:
+  - current shortage
   - recent outbound demand
-  - business priority levels: `CRITICAL`, `HIGH`, `MEDIUM`
-
-### Frontend operations console
-
-- Dashboard with warehouse KPIs
-- Product inventory visibility
-- Low-stock and replenishment views
-- Stock movement overview
-- Storage location overview
-- Mocked E2E-tested user flows
-
-### API quality
-
-- Versioned API routes under `/api/v1`
-- Structured JSON error responses
-- Bean validation for request bodies, path variables, and query parameters
-- OpenAPI documentation via Swagger UI
-- Health endpoint for smoke tests and local checks
+  - priority levels: `CRITICAL`, `HIGH`, `MEDIUM`
 
 ---
 
-## Architecture Diagram
+## Architecture
 
 ```text
-┌───────────────────────────────────────────────────────────────┐
-│ Angular Frontend                                              │
-│                                                               │
-│ - Dashboard                                                   │
-│ - Products                                                    │
-│ - Stock Movements                                             │
-│ - Storage Locations                                           │
-│ - API Services                                                │
-│ - Feature Facades                                             │
-└───────────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTP / JSON
-                              ▼
-┌───────────────────────────────────────────────────────────────┐
-│ Spring Boot Backend                                           │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ Controller Layer                                        │  │
-│  │ - ProductController                                     │  │
-│  │ - ProductStockMovementController                        │  │
-│  │ - StorageLocationController                             │  │
-│  │ - StockMovementController                               │  │
-│  │ - HealthController                                      │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                              │                                │
-│                              ▼                                │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ Service Layer                                           │  │
-│  │ - ProductService                                        │  │
-│  │ - StorageLocationService                                │  │
-│  │ - StockMovementService                                  │  │
-│  │                                                         │  │
-│  │ Contains business rules such as:                        │  │
-│  │ - stock validation                                      │  │
-│  │ - relocation rules                                      │  │
-│  │ - low-stock detection                                   │  │
-│  │ - replenishment recommendation logic                    │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                              │                                │
-│                              ▼                                │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ Repository Layer                                        │  │
-│  │ - ProductRepository                                     │  │
-│  │ - StorageLocationRepository                             │  │
-│  │ - StockMovementRepository                               │  │
-│  └─────────────────────────────────────────────────────────┘  │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │ Common / Cross-Cutting Components                       │  │
-│  │ - ApiPaths                                              │  │
-│  │ - GlobalExceptionHandler                                │  │
-│  │ - ApiErrorResponse                                      │  │
-│  │ - PagedResponse                                         │  │
-│  │ - OpenApiConfig                                         │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌───────────────────────────────────────────────────────────────┐
-│ PostgreSQL Database                                           │
-│ Tables:                                                       │
-│ - storage_locations                                           │
-│ - products                                                    │
-│ - stock_movements                                             │
-└───────────────────────────────────────────────────────────────┘
-                              ▲
-                              │
-┌───────────────────────────────────────────────────────────────┐
-│ Flyway Migrations                                             │
-│ - V1__init_schema.sql                                         │
-│ - V2__align_current_schema.sql                                │
-│ - V3__drop_legacy_product_table.sql                           │
-│ - V4__make_storage_location_description_optional.sql          │
-└───────────────────────────────────────────────────────────────┘
+Angular Frontend
+  ↓ HTTP / JSON
+Spring Boot REST API
+  ↓ Spring Data JPA
+PostgreSQL Database
 ```
 
-## Design Diagrams
-
-### Domain Model UML
-
-```mermaid
-classDiagram
-    direction LR
-
-    class StorageLocation {
-        +Long id
-        +String code
-        +String zone
-        +String description
-        +Boolean active
-    }
-
-    class Product {
-        +Long id
-        +String sku
-        +String name
-        +String description
-        +String unit
-        +Integer quantity
-        +Integer minimumQuantity
-        +ProductStatus status
-        +StorageLocation storageLocation
-    }
-
-    class StockMovement {
-        +Long id
-        +Product product
-        +StockMovementType movementType
-        +Integer quantity
-        +Integer resultingQuantity
-        +String note
-        +Instant movementAt
-    }
-
-    class ProductStatus {
-        <<enumeration>>
-        ACTIVE
-        BLOCKED
-        DISCONTINUED
-    }
-
-    class StockMovementType {
-        <<enumeration>>
-        INBOUND
-        OUTBOUND
-        ADJUSTMENT
-    }
-
-    StorageLocation "0..1" <-- "0..*" Product : assigned location
-    Product "1" <-- "0..*" StockMovement : movement history
-    Product --> ProductStatus : status
-    StockMovement --> StockMovementType : movement type
-```
-
-### Stock Movement Sequence
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Frontend as Angular Frontend
-    participant Controller as StockMovementController
-    participant Service as StockMovementService
-    participant ProductRepo as ProductRepository
-    participant MovementRepo as StockMovementRepository
-    participant DB as PostgreSQL
-
-    User->>Frontend: Submit stock movement
-    Frontend->>Controller: POST /api/v1/stock-movements
-    Controller->>Service: createStockMovement(request)
-
-    Service->>ProductRepo: findByIdForUpdate(productId)
-    ProductRepo->>DB: SELECT product with pessimistic write lock
-    DB-->>ProductRepo: Product row
-    ProductRepo-->>Service: Product
-
-    Service->>Service: Validate product status
-    Service->>Service: Validate requested quantity
-
-    alt INBOUND
-        Service->>Service: resultingQuantity = currentQuantity + requestedQuantity
-    else OUTBOUND
-        Service->>Service: reject if requestedQuantity > currentQuantity
-        Service->>Service: resultingQuantity = currentQuantity - requestedQuantity
-    else ADJUSTMENT
-        Service->>Service: resultingQuantity = requestedQuantity
-    end
-
-    Service->>ProductRepo: save(product with updated quantity)
-    ProductRepo->>DB: UPDATE products
-
-    Service->>MovementRepo: save(stockMovement)
-    MovementRepo->>DB: INSERT stock_movements
-
-    MovementRepo-->>Service: saved StockMovement
-    Service-->>Controller: StockMovementResponse
-    Controller-->>Frontend: 201 Created + JSON response
-    Frontend-->>User: Updated stock movement view
-```
-
----
-
-## Architecture Notes
-
-The backend follows a classic layered design.
-
-### Controller layer
-
-The controller layer exposes REST endpoints and validates incoming HTTP requests. It is responsible for:
-
-- endpoint routing
-- request/response mapping
-- parameter validation
-- HTTP status codes
-- OpenAPI annotations
-
-### Service layer
-
-The service layer contains the main business logic, including:
-
-- SKU uniqueness checks
-- storage location activity checks
-- low-stock detection
-- replenishment calculation
-- relocation rules
-- stock update rules
-- deletion constraints
-
-### Repository layer
-
-The repository layer uses Spring Data JPA to interact with PostgreSQL. It provides:
-
-- CRUD access
-- filtered queries
-- stock movement aggregation queries
-- pessimistic locking for concurrency-safe stock updates
-
-### Common layer
-
-The common layer centralizes reusable concerns such as:
-
-- versioned API path constants
-- paginated response wrappers
-- OpenAPI configuration
-- custom exception types
-- global error handling
-
-### Frontend structure
-
-The frontend is organized around feature areas and shared core infrastructure.
-
-The main frontend structure includes:
-
-- core API services
-- centralized API path constants
-- centralized frontend error message mapping
-- feature facades for state and action handling
-- UI-focused Angular components
-- mocked Playwright E2E tests
-
----
-
-## Domain Model
-
-The system centers around three main entities.
-
-### `StorageLocation`
-
-Represents a physical warehouse location.
-
-Fields:
-
-- `id`
-- `code`
-- `zone`
-- `description`
-- `active`
-
-### `Product`
-
-Represents an inventory item.
-
-Fields:
-
-- `id`
-- `sku`
-- `name`
-- `description`
-- `unit`
-- `quantity`
-- `minimumQuantity`
-- `status`
-- `storageLocation`
-
-### `StockMovement`
-
-Represents a stock-changing event for a product.
-
-Fields:
-
-- `id`
-- `product`
-- `movementType`
-- `quantity`
-- `resultingQuantity`
-- `note`
-- `movementAt`
-
----
-
-## Tech Stack
-
-### Backend
-
-- Java 21
-- Spring Boot 4
-- Spring Web
-- Spring Validation
-- Spring Data JPA
-- Hibernate
-- PostgreSQL
-- Flyway
-- Swagger / springdoc-openapi
-- JUnit 5
-- MockMvc
-- Maven
-
-### Frontend
-
-- Angular
-- TypeScript
-- SCSS
-- Angular HTTP client
-- Feature facade pattern
-- Playwright
-- Vitest / Angular test runner
-
-### Infrastructure
-
-- Docker
-- Docker Compose
-- Shell scripts for dev and demo workflows
-
----
-
-## Project Structure
+The backend follows a layered architecture:
 
 ```text
-warehouse-flow-manager/
-├── docs/
-│   └── screenshots/
-│       ├── dashboard-overview.png
-│       ├── product-inventory.png
-│       ├── stock-movements.png
-│       ├── storage-locations.png
-│       └── swagger-openapi.png
-├── frontend/
-│   ├── e2e/
-│   │   ├── mocks/
-│   │   │   └── warehouse-api.mock.ts
-│   │   ├── app-shell.spec.ts
-│   │   ├── dashboard.spec.ts
-│   │   ├── products.spec.ts
-│   │   ├── stock-movements.spec.ts
-│   │   ├── storage-locations.spec.ts
-│   │   └── tsconfig.json
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── core/
-│   │   │   │   ├── api/
-│   │   │   │   └── error/
-│   │   │   └── features/
-│   │   │       ├── dashboard/
-│   │   │       ├── products/
-│   │   │       ├── stock-movements/
-│   │   │       └── storage-locations/
-│   │   ├── styles.scss
-│   │   ├── proxy.conf.json
-│   │   └── proxy.demo.conf.json
-│   ├── angular.json
-│   ├── package.json
-│   └── playwright.config.ts
-├── scripts/
-│   ├── demo/
-│   │   ├── reset-demo-db.sh
-│   │   ├── run-demo.sh
-│   │   ├── run-demo-test.sh
-│   │   └── stop-demo.sh
-│   └── dev/
-│       ├── reset-dev-db.sh
-│       ├── run-dev.sh
-│       ├── run-dev-test.sh
-│       └── stop-dev.sh
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/warehouseflowmanager/
-│   │   │   ├── common/
-│   │   │   │   ├── api/
-│   │   │   │   ├── dto/
-│   │   │   │   └── exception/
-│   │   │   ├── controller/
-│   │   │   ├── product/
-│   │   │   │   ├── controller/
-│   │   │   │   ├── dto/
-│   │   │   │   ├── entity/
-│   │   │   │   ├── repository/
-│   │   │   │   └── service/
-│   │   │   ├── stockmovement/
-│   │   │   │   ├── controller/
-│   │   │   │   ├── dto/
-│   │   │   │   ├── entity/
-│   │   │   │   ├── repository/
-│   │   │   │   └── service/
-│   │   │   ├── storagelocation/
-│   │   │   │   ├── controller/
-│   │   │   │   ├── dto/
-│   │   │   │   ├── entity/
-│   │   │   │   ├── repository/
-│   │   │   │   └── service/
-│   │   │   └── WarehouseFlowManagerApplication.java
-│   │   └── resources/
-│   │       ├── db/
-│   │       │   ├── demo/
-│   │       │   └── migration/
-│   │       ├── application.yml
-│   │       ├── application-demo.yml
-│   │       └── application-sql-debug.yml
-│   └── test/
-│       └── java/com/example/warehouseflowmanager/
-│           ├── product/controller/
-│           ├── stockmovement/controller/
-│           ├── storagelocation/controller/
-│           └── WarehouseFlowManagerApplicationTests.java
-├── Dockerfile
-├── docker-compose.yml
-├── docker-compose-dev.yml
-├── pom.xml
-├── .env.example
-├── .env              # local demo config, not committed
-└── .env.dev          # local dev config, not committed
+REST Controllers
+  ↓
+Service Layer / Business Rules
+  ↓
+Spring Data JPA Repositories
+  ↓
+PostgreSQL
 ```
+
+Flyway manages schema migrations separately from application logic.
+
+More details:
+
+- [Backend details](docs/backend_details.md)
+- [Frontend details](docs/frontend_details.md)
+- [Backend testing guide](docs/BACKEND_TESTING.md)
+- [Frontend testing guide](docs/FRONTEND_TESTING.md)
 
 ---
 
-## API Modules
+## Main business rules
 
-All API routes are versioned under:
+- Product SKU must be unique.
+- Storage location code must be unique.
+- Products cannot be assigned to inactive storage locations.
+- Blocked products cannot be created with initial stock.
+- Blocked products cannot participate in stock movements.
+- Product quantity cannot be changed through the update-product endpoint.
+- Product quantity must be changed through stock movements only.
+- Outbound quantity cannot exceed current stock.
+- Storage locations cannot be deleted while products are assigned.
+- Products cannot be deleted while stock exists.
+- Products cannot be deleted when stock movement history exists.
+- Relocation to the same storage location is rejected.
+
+---
+
+## Project structure
 
 ```text
-/api/v1
-```
-
-### Products
-
-Base path: `/api/v1/products`
-
-Main endpoints:
-
-- `POST /api/v1/products`
-- `GET /api/v1/products`
-- `GET /api/v1/products/{id}`
-- `PUT /api/v1/products/{id}`
-- `DELETE /api/v1/products/{id}`
-- `PATCH /api/v1/products/{id}/storage-location`
-- `GET /api/v1/products/low-stock`
-- `GET /api/v1/products/replenishment-candidates`
-
-### Product stock movements
-
-Base path: `/api/v1/products/{id}`
-
-Main endpoints:
-
-- `GET /api/v1/products/{id}/stock-movements`
-- `GET /api/v1/products/{id}/stock-movements/summary`
-
-### Storage locations
-
-Base path: `/api/v1/storage-locations`
-
-Main endpoints:
-
-- `POST /api/v1/storage-locations`
-- `GET /api/v1/storage-locations`
-- `GET /api/v1/storage-locations/{id}`
-- `PUT /api/v1/storage-locations/{id}`
-- `DELETE /api/v1/storage-locations/{id}`
-- `GET /api/v1/storage-locations/{id}/stock-overview`
-
-### Stock movements
-
-Base path: `/api/v1/stock-movements`
-
-Main endpoints:
-
-- `POST /api/v1/stock-movements`
-- `GET /api/v1/stock-movements`
-- `GET /api/v1/stock-movements/summary`
-
-### Health
-
-- `GET /api/v1/health`
-
----
-
-## Business Rules
-
-The backend enforces several warehouse-specific rules:
-
-- Product SKU must be unique
-- Storage location code must be unique
-- Products cannot be assigned to inactive storage locations
-- Blocked products cannot be created with initial stock
-- Blocked products cannot participate in stock movements
-- Product quantity cannot be changed through the update-product endpoint
-- Product quantity must be changed through stock movements only
-- Outbound quantity cannot exceed current stock
-- Storage locations cannot be deleted while products are assigned
-- Products cannot be deleted while stock exists
-- Products cannot be deleted when stock movement history exists
-- Relocation to the same storage location is rejected
-
----
-
-## Error Response Format
-
-Validation and business errors are returned in a consistent JSON structure.
-
-Example:
-
-```json
-{
-  "timestamp": "2026-04-21T20:30:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "path": "/api/v1/products",
-  "validationErrors": {
-    "size": "Size must be greater than 0"
-  }
-}
+warehouse-flow-manager
+├─ docs
+│  ├─ screenshots
+│  │  ├─ dashboard-overview.png
+│  │  ├─ product-inventory.png
+│  │  ├─ stock-movements.png
+│  │  ├─ storage-locations.png
+│  │  └─ swagger-openapi.png
+│  ├─ backend_details.md
+│  ├─ frontend_details.md
+│  ├─ BACKEND_TESTING.md
+│  └─ FRONTEND_TESTING.md
+├─ frontend
+│  ├─ e2e
+│  ├─ src
+│  ├─ Dockerfile
+│  ├─ docker-compose.yml
+│  ├─ nginx.conf
+│  ├─ proxy.conf.json
+│  ├─ proxy.demo.conf.json
+│  ├─ package.json
+│  ├─ angular.json
+│  └─ playwright.config.ts
+├─ scripts
+│  ├─ demo
+│  └─ dev
+├─ src
+│  ├─ main
+│  │  ├─ java/com/example/warehouseflowmanager
+│  │  └─ resources
+│  │     ├─ db/migration
+│  │     ├─ db/demo
+│  │     ├─ application.yml
+│  │     ├─ application-demo.yml
+│  │     └─ application-sql-debug.yml
+│  └─ test
+│     └─ java/com/example/warehouseflowmanager
+├─ docker-compose.yml
+├─ docker-compose-dev.yml
+├─ Dockerfile
+├─ pom.xml
+└─ README.md
 ```
 
 ---
 
-## Prerequisites
+## Runtime modes
 
-Make sure the following are installed:
+The project separates development and demo runtime paths.
 
-- Java 21
-- Maven Wrapper support through `./mvnw`
-- Docker
-- Docker Compose
-- Node.js
-- npm
+### Development runtime
+
+Used for active development.
+
+- PostgreSQL runs in Docker.
+- Spring Boot usually runs locally.
+- Backend usually runs on port `8080`.
+
+Main files:
+
+```text
+docker-compose-dev.yml
+.env.dev
+scripts/dev/run-dev.sh
+scripts/dev/stop-dev.sh
+scripts/dev/reset-dev-db.sh
+scripts/dev/run-dev-test.sh
+```
+
+### Demo runtime
+
+Used for reviewer walkthroughs and portfolio presentation.
+
+- PostgreSQL runs in Docker.
+- Spring Boot runs through Docker Compose.
+- Backend runs on port `8081`.
+- Optional demo seed data can be loaded.
+
+Main files:
+
+```text
+docker-compose.yml
+.env.example
+.env
+scripts/demo/run-demo.sh
+scripts/demo/stop-demo.sh
+scripts/demo/reset-demo-db.sh
+scripts/demo/seed-demo-data.sh
+scripts/demo/run-demo-test.sh
+```
 
 ---
 
-## Environment Files
+## Quick start
 
-### `.env`
+### Demo backend
+
+Prerequisites:
+
+- Docker Desktop installed and running
+- port `8081` free
+
+Start demo backend:
 
 ```bash
+git clone https://github.com/Punschkrapferl/warehouse-flow-manager
+cd warehouse-flow-manager
+
 cp .env.example .env
-```
-
-Used for the demo/dockerized stack.
-
-### `.env.dev`
-
-Used for local development where PostgreSQL runs in Docker and the Spring Boot app runs locally.
-
----
-
-## Running the Backend
-
-### Option 1: Local development mode
-
-In this mode:
-
-- PostgreSQL runs in Docker
-- Spring Boot runs locally via Maven
-
-Start development mode:
-
-```bash
-./scripts/dev/run-dev.sh
-```
-
-Stop development mode:
-
-```bash
-./scripts/dev/stop-dev.sh
-```
-
-Reset the dev database:
-
-```bash
-./scripts/dev/reset-dev-db.sh
-```
-
-Run tests in dev mode:
-
-```bash
-./scripts/dev/run-dev-test.sh
-```
-
-Manual backend smoke test flow:
-
-- [`BACKEND_TESTING.md`](BACKEND_TESTING.md)
-
----
-
-### Option 2: Demo mode with Docker Compose
-
-In this mode:
-
-- PostgreSQL runs in Docker
-- the Spring Boot application also runs in Docker
-- the stack is started through `docker-compose.yml`
-
-Start demo mode:
-
-```bash
 ./scripts/demo/run-demo.sh
 ```
 
-Stop demo mode:
-
-```bash
-./scripts/demo/stop-demo.sh
-```
-
-Reset the demo database:
-
-```bash
-./scripts/demo/reset-demo-db.sh
-```
-
-Run tests against the demo database setup:
-
-```bash
-./scripts/demo/run-demo-test.sh
-```
-
-Manual backend smoke test flow:
-
-- [`BACKEND_TESTING.md`](BACKEND_TESTING.md)
-
----
-
-## Running the Frontend
-
-From the `frontend/` directory:
-
-```bash
-npm install
-```
-
-For local development with the backend running on `localhost:8080`:
-
-```bash
-npm start
-```
-
-For demo mode with the Docker backend running on `localhost:8081`:
-
-```bash
-npm run start:demo
-```
-
-The Angular app usually runs locally on:
-
-```text
-http://localhost:4200
-```
-
-If port `4200` is already occupied, Angular can be started on another port such as `4300`.
-
-The frontend uses a proxy configuration for local API calls:
-
-```text
-frontend/src/proxy.conf.json       -> local backend on localhost:8080
-frontend/src/proxy.demo.conf.json  -> Docker demo backend on localhost:8081
-```
-
----
-
-## API Documentation
-
-Swagger UI is available at:
-
-```text
-http://localhost:8080/swagger-ui/index.html
-```
-
-or, when running the demo configuration:
+Open Swagger UI:
 
 ```text
 http://localhost:8081/swagger-ui/index.html
 ```
 
-OpenAPI JSON is available at:
-
-```text
-http://localhost:8080/v3/api-docs
-```
-
-or, when running the demo configuration:
+Open OpenAPI JSON:
 
 ```text
 http://localhost:8081/v3/api-docs
 ```
 
----
+Stop demo backend:
 
-## Database Migrations
-
-The project uses Flyway for schema migration.
-
-Current migrations:
-
-- `V1__init_schema.sql`
-- `V2__align_current_schema.sql`
-- `V3__drop_legacy_product_table.sql`
-- `V4__make_storage_location_description_optional.sql`
-
-Demo-only seed data is stored separately under:
-
-- `db/demo/V100__seed_demo_data.sql`
-
-Hibernate is configured with:
-
-```yaml
-spring.jpa.hibernate.ddl-auto=validate
+```bash
+./scripts/demo/stop-demo.sh
 ```
 
-This means:
+Reset demo database:
 
-- Flyway owns schema evolution
-- Hibernate validates the schema on startup
-- accidental schema drift is caught early
+```bash
+./scripts/demo/reset-demo-db.sh
+./scripts/demo/run-demo.sh
+```
+
+Run backend tests against the demo setup:
+
+```bash
+./scripts/demo/run-demo-test.sh
+```
+
+---
+
+## Optional demo seed data
+
+The project includes optional demo seed data:
+
+```text
+src/main/resources/db/demo/V100__seed_demo_data.sql
+```
+
+This file is intentionally stored under `db/demo`, not `db/migration`.
+
+That means Flyway does **not** run it automatically.
+
+The seed file creates realistic demo data for:
+
+- products
+- storage locations
+- stock movements
+- low-stock products
+- replenishment candidates
+- active, blocked, and discontinued stock states
+
+Load the optional seed data after starting the demo backend:
+
+```bash
+./scripts/demo/seed-demo-data.sh
+```
+
+The seed script is re-runnable. It deletes and reinserts only the fixed demo records defined in the script, not arbitrary business data.
+
+---
+
+## Frontend quick start
+
+### Local Angular runtime
+
+For local development with the backend running on `localhost:8080`:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The Angular app runs on:
+
+```text
+http://localhost:4200
+```
+
+The local proxy file is:
+
+```text
+frontend/proxy.conf.json
+```
+
+It forwards `/api` requests to:
+
+```text
+http://localhost:8080
+```
+
+### Demo Angular runtime
+
+For demo mode with the Docker backend running on `localhost:8081`:
+
+```bash
+cd frontend
+npm run start:demo
+```
+
+The demo proxy file is:
+
+```text
+frontend/proxy.demo.conf.json
+```
+
+It forwards `/api` requests to:
+
+```text
+http://localhost:8081
+```
+
+### Dockerized frontend runtime
+
+The frontend can also run as a Dockerized nginx build.
+
+The Dockerized frontend serves the Angular production build and proxies `/api/` calls to the demo backend.
+
+Start the Dockerized frontend:
+
+```bash
+cd frontend
+docker compose up -d --build
+```
+
+Open:
+
+```text
+http://localhost:4200
+```
+
+Stop the Dockerized frontend:
+
+```bash
+cd frontend
+docker compose down
+```
+
+---
+
+## API overview
+
+All backend endpoints are versioned under:
+
+```text
+/api/v1
+```
+
+Main endpoint groups:
+
+- `/api/v1/health`
+- `/api/v1/products`
+- `/api/v1/products/{id}/stock-movements`
+- `/api/v1/products/{id}/stock-movements/summary`
+- `/api/v1/products/{id}/storage-location`
+- `/api/v1/products/low-stock`
+- `/api/v1/products/replenishment-candidates`
+- `/api/v1/storage-locations`
+- `/api/v1/storage-locations/{id}/stock-overview`
+- `/api/v1/stock-movements`
+- `/api/v1/stock-movements/summary`
+
+Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+http://localhost:8081/swagger-ui/index.html
+```
 
 ---
 
 ## Testing
 
-The project includes automated tests for both backend and frontend.
-
 ### Backend tests
 
-Run from the project root:
+Run backend tests through the demo setup:
 
 ```bash
-./mvnw test
+./scripts/demo/run-demo-test.sh
 ```
 
-Backend tests cover:
+Run backend tests through the development setup:
 
-- controller behavior
-- validation
-- business-rule enforcement
-- stock movement logic
-- product relocation rules
-- storage location constraints
-- error response format
-- database-backed integration flows
+```bash
+./scripts/dev/run-dev-test.sh
+```
 
-The backend test stack includes:
-
-- `SpringBootTest`
-- `MockMvc`
-- `JdbcTemplate`
-- real database-backed integration flows
-
-Detailed backend manual testing is documented in:
-
-- [`BACKEND_TESTING.md`](BACKEND_TESTING.md)
-
----
+Manual backend verification can be done with Swagger UI, Postman, or curl. A Postman-friendly request list is included in [Backend testing guide](docs/BACKEND_TESTING.md).
 
 ### Frontend tests
 
-Run Angular unit/API tests from the `frontend/` directory:
+Run frontend tests from the `frontend/` directory:
 
 ```bash
-npm test
-```
-
-For a non-watch CI-style test run:
-
-```bash 
-npm run test:ci
-```
-
-Frontend tests cover:
-- Angular components
-- feature facades
-- API service behavior
-- frontend error handling
-- main UI state flows
-
----
-
-### Mocked Playwright E2E tests
-
-Run from the `frontend/` directory:
-
-```bash
-npm run e2e
-```
-
-The Playwright tests use mocked API responses, so the frontend user flows can be tested independently from the backend.
-
-Covered E2E areas include:
-
-- app shell
-- dashboard
-- products
-- stock movements
-- storage locations
-
----
-
-### Production build check
-
-Run from the `frontend/` directory:
-
-```bash
-npm run build
-```
-
-### Frontend verification script
-
-The frontend also provides one combined verification script:
-
-```bash
+cd frontend
 npm run verify
 ```
 
@@ -946,76 +510,51 @@ This runs:
 - mocked Playwright E2E tests
 - Angular production build
 
-It is useful before committing frontend changes or before presenting the project.
-
----
-
-## Quick Verification
-
-Run backend verification from the project root:
+Individual frontend commands:
 
 ```bash
-./scripts/demo/run-demo-test.sh
+npm test
+npm run test:ci
+npm run e2e
+npm run build
 ```
 
-Run frontend verification:
+Frontend testing guide:
 
-```bash 
-cd frontend
-npm run verify
+```text
+docs/FRONTEND_TESTING.md
 ```
 
 ---
 
-## Example Highlights
+## Notes
 
-A few noteworthy implementation details:
-
-- stock updates use pessimistic locking to avoid concurrent inventory inconsistencies
-- product listing supports filtering, pagination, and safe sorting
-- replenishment recommendations combine minimum stock shortage with recent outbound demand
-- low-stock logic is consistent across product and storage-location views
-- OpenAPI descriptions are written directly in controller annotations for easy exploration in Swagger UI
-- frontend API paths are centralized
-- frontend components delegate state and actions to feature facades
-- mocked Playwright E2E tests make frontend flows stable and reviewable without requiring a live backend
-- the Spring Boot backend can be inspected with JVM monitoring tools such as Java VisualVM or JProfiler to observe heap usage, thread activity, and runtime behavior during local test runs
-
----
-
-## Current Status
-
-The project currently demonstrates:
-
-- clean Spring Boot backend architecture
-- versioned REST API under `/api/v1`
-- PostgreSQL persistence
-- Flyway schema migrations
-- documented OpenAPI endpoints
-- centralized validation and error handling
-- warehouse-specific business rules
-- Angular operations-console frontend
-- centralized frontend API services
-- feature facades for frontend state management
-- frontend unit/API tests
-- mocked Playwright E2E tests
-- Docker-based local/demo execution
+- This is a demonstration project, not a full warehouse management system.
+- The scope is intentionally focused and practical.
+- PostgreSQL persistence is managed through Flyway migrations.
+- Hibernate validates the schema on startup.
+- The backend API is versioned under `/api/v1`.
+- Swagger/OpenAPI is included for API exploration.
+- Optional demo seed data is separate from normal Flyway migrations.
+- Demo and development paths are intentionally separated.
+- The frontend can run locally through Angular or as a Dockerized nginx build.
+- Mocked Playwright E2E tests verify frontend flows independently of the backend.
 
 ---
 
-## Possible Next Steps
+## Future improvements
 
 Possible future improvements:
 
 - authentication and role-based authorization
-- reservation / picking workflows
+- reservation and picking workflows
 - supplier and purchase order management
 - audit logging
 - reporting dashboards
-- CI pipeline for automated test runs
-- Testcontainers-based test setup
+- CI pipeline automation
+- Testcontainers-based backend test setup
 - real full-stack E2E smoke tests against a live backend
-- frontend deployment packaging
+- deployment beyond local Docker usage
 
 ---
 
@@ -1026,7 +565,7 @@ MIT License
 Copyright (c) 2026 Punschkrapferl
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
+of this software and associated documentation files (the Software), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is furnished
@@ -1035,7 +574,7 @@ to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
