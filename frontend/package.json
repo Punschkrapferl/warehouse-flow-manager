@@ -13,7 +13,8 @@
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
     "e2e:debug": "playwright test --debug",
-    "verify": "npm run test:ci && npm run e2e && npm run build"
+    "verify": "npm run test:ci && npm run e2e && npm run build",
+    "e2e:docker": "playwright test --config=playwright.docker.config.ts"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
