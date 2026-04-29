@@ -1,0 +1,10 @@
+node_modules
+dist
+.angular
+.vscode
+test-results
+playwright-report
+coverage
+.git
+.gitignore
+README.md
